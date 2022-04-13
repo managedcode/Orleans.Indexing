@@ -22,9 +22,6 @@ namespace Orleans.Index.Tests
             var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
 
             grain.Should().NotBeNull();
-
-            // var result = await grain.Register(command);
-            // result.Should().NotBeNull();
         }
     }
 }

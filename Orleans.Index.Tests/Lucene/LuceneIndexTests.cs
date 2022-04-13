@@ -9,15 +9,23 @@ using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
-using Orleans.Index.Annotations;
-using Orleans.Index.Lucene.Services;
+using Orleans.Index.Tests.Cluster;
+using Orleans.Index.Tests.Cluster.Fakes;
 using Orleans.Index.Tests.Grains;
 using Xunit;
 
 namespace Orleans.Index.Tests.Lucene;
 
-public class IndexTests
+[Collection(nameof(LuceneHubClusterCollection))]
+public class LuceneIndexTests
 {
+    private readonly ClusterFixture _fixture;
+
+    public LuceneIndexTests(LuceneHubClusterCollection.WinktClusterFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
 
     // RAM
@@ -119,17 +127,22 @@ public class IndexTests
     [Fact]
     public async Task GetGrainIds()
     {
-        IIndexService service = new LuceneIndexService();
-
-        const int count = 10;
+        const int count = 5;
+        const int intValue = 10;
 
         for (var i = 0; i < count; i++)
         {
-            var grain = new TestGrain(service);
-            await grain.OnActivateAsync();
+            var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
+            await grain.UpdateIntValue(intValue);
         }
 
-        var ids = await service.GetGrainIdsByQuery(nameof(TestGrain.Class.Test), "3");
+        for (var i = 0; i < count; i++)
+        {
+            var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
+            await grain.UpdateIntValue(3);
+        }
+
+        var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
 
         ids.Count.Should().Be(count);
     }
