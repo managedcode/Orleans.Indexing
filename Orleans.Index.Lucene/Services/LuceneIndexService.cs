@@ -1,12 +1,13 @@
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
 using Orleans.Concurrency;
-using Orleans.Indexing;
+using Orleans.Index.Annotations;
 
 namespace Orleans.Index.Lucene.Services;
 
@@ -35,19 +36,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         _indexSearcher = new IndexSearcher(_directoryReader);
     }
 
-    public Task WriteIndex(GrainDocument document) => Task.Run(() =>
-    {
-        var parser = new QueryParser(AppLuceneVersion, GrainDocument.GrainIdFieldName, _analyzer);
-        var query = parser.Parse(document.LuceneDocument.GetField(GrainDocument.GrainIdFieldName).GetStringValue());
-        _indexWriter.DeleteDocuments(query);
-        _indexWriter.AddDocument(document.LuceneDocument);
-        _indexWriter.Commit();
-
-        _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
-        _indexSearcher = new IndexSearcher(_directoryReader);
-
-        return Task.CompletedTask;
-    });
+    public Task WriteIndex(GrainDocument document) => Task.Run(() => { });
 
     // public Task<TopDocs> QueryByField(string field, string query, int take = 1000) => Task.Run(() =>
     // {
@@ -58,12 +47,36 @@ public class LuceneIndexService : IIndexService, IDisposable
     //     return result;
     // });
 
-    public Task<IList<string>> GetGrainIdsByQuery(string field, string query, int take = 1000) => Task.Run(() =>
+    public Task WriteIndex(Dictionary<string, object> properties)
+    {
+        var grainId = properties["id"] as string;
+
+        var document = new GrainDocument(grainId);
+
+        foreach (var property in properties)
+        {
+            document.LuceneDocument.Add(new StringField(property.Key, property.Value as string, Field.Store.YES));
+        }
+
+        var parser = new QueryParser(AppLuceneVersion, GrainDocument.GrainIdFieldName, _analyzer);
+        var query = parser.Parse(document.LuceneDocument.GetField(GrainDocument.GrainIdFieldName).GetStringValue());
+        _indexWriter.DeleteDocuments(query);
+        _indexWriter.AddDocument(document.LuceneDocument);
+        _indexWriter.Commit();
+
+        _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
+        _indexSearcher = new IndexSearcher(_directoryReader);
+
+        return Task.CompletedTask;
+    }
+
+    public Task<IList<string>> GetGrainIdsByQuery(string? field, string query, int take = 1000) => Task.Run(() =>
     {
         var parser = new QueryParser(AppLuceneVersion, field ?? GrainDocument.GrainIdFieldName, _analyzer);
         var result = _indexSearcher.Search(parser.Parse(query), null, take);
 
         IList<string> ids = new List<string>();
+
         foreach (var doc in result.ScoreDocs)
         {
             var document = _indexSearcher.Doc(doc.Doc);

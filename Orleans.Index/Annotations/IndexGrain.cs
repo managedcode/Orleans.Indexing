@@ -1,5 +1,4 @@
 using Orleans.Index.Abstractions;
-using Orleans.Indexing;
 using Orleans.Placement;
 
 namespace Orleans.Index.Annotations;
@@ -26,13 +25,14 @@ public abstract class IndexGrain : Grain
             id = Guid.NewGuid().ToString();
         }
 
-        var doc = new GrainDocument(id);
-        WriteProperties(doc, this);
+        Dictionary<string, object> dictionary = new() {{"Id", id}};
 
-        await _indexService.WriteIndex(doc);
+        WriteProperties(dictionary, this);
+
+        await _indexService.WriteIndex(dictionary);
     }
 
-    private void WriteProperties(GrainDocument doc, object obj)
+    private void WriteProperties(Dictionary<string, object> dictionary, object obj)
     {
         var properties = obj.GetType().GetProperties();
 
@@ -46,11 +46,11 @@ public abstract class IndexGrain : Grain
             if (!(type.IsPrimitive || type == typeof(decimal) || type == typeof(string)))
             {
                 var instance = propInfo.GetValue(obj);
-                WriteProperties(doc, instance);
+                WriteProperties(dictionary, instance);
             }
             else
             {
-                doc.LuceneDocument.Add(new StringField($"{propInfo.Name}", $"{propInfo.GetValue(obj)}", Field.Store.YES));
+                dictionary.Add($"{propInfo.Name}", $"{propInfo.GetValue(obj)}");
             }
         }
     }

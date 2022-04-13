@@ -1,10 +1,10 @@
 using Orleans.Services;
 
-namespace Orleans.Indexing;
+namespace Orleans.Index.Annotations;
 
 public interface IIndexService : IGrainService
 {
-    // Task WriteIndex(GrainDocument document);
+    Task WriteIndex(Dictionary<string, object> properties);
 
     // Task<TopDocs> QueryByField(string field, string query, int take = 1000);
 
