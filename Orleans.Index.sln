@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index", "Orleans.In
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index.Lucene", "Orleans.Index.Lucene\Orleans.Index.Lucene.csproj", "{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index.Tests", "Orleans.Index.Tests\Orleans.Index.Tests.csproj", "{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
