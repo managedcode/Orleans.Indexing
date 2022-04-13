@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index", "Orleans.Index\Orleans.Index.csproj", "{B8433DF7-1E87-4C00-850D-191B76BFEEC2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index.Lucene", "Orleans.Index.Lucene\Orleans.Index.Lucene.csproj", "{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B8433DF7-1E87-4C00-850D-191B76BFEEC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8433DF7-1E87-4C00-850D-191B76BFEEC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8433DF7-1E87-4C00-850D-191B76BFEEC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8433DF7-1E87-4C00-850D-191B76BFEEC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
