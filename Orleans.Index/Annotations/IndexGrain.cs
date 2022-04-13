@@ -25,12 +25,13 @@ public abstract class IndexGrain : Grain
             id = Guid.NewGuid().ToString();
         }
 
-        Dictionary<string, object> dictionary = new() {{"Id", id}};
+        Dictionary<string, object> dictionary = new() {{Constants.GrainId, id}};
 
         WriteProperties(dictionary, this);
 
         await _indexService.WriteIndex(dictionary);
     }
+
 
     private void WriteProperties(Dictionary<string, object> dictionary, object obj)
     {
