@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Orleans.Index.Abstractions;
 using Orleans.Index.Annotations;
 
-namespace Orleans.Index.Tests.Lucene;
+namespace Orleans.Index.Tests.Grains;
 
 public class MyClass
 {
@@ -11,7 +11,7 @@ public class MyClass
     [Index] public string TestString { get; set; }
 }
 
-public class TestGrain : IndexGrain, IGrainWithStringKey
+public class TestGrain : IndexGrain, ITestGrain
 {
     public TestGrain(IIndexService indexService) : base(indexService)
     {
@@ -22,8 +22,6 @@ public class TestGrain : IndexGrain, IGrainWithStringKey
 
     public override async Task OnActivateAsync()
     {
-        await base.OnActivateAsync();
-
         Class = new MyClass {Test = 3, TestString = "Test"};
 
         await WriteIndexAsync();
