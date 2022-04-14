@@ -1,5 +1,6 @@
 using Lucene.Net.Store;
 using ManagedCode.Storage.Core;
+using Directory = Lucene.Net.Store.Directory;
 
 namespace Orleans.Index.Lucene.Storage;
 
@@ -10,7 +11,23 @@ public class StorageDirectory : BaseDirectory
     public StorageDirectory(IStorage storage)
     {
         _storage = storage;
+
+        var cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "AzureDirectory");
+        var azureDir = new DirectoryInfo(cachePath);
+        if (!azureDir.Exists)
+            azureDir.Create();
+
+        var catalogPath = Path.Combine(cachePath, "catalog");
+
+        var catalogDir = new DirectoryInfo(catalogPath);
+        if (!catalogDir.Exists)
+            catalogDir.Create();
+
+        CachedDirectory = FSDirectory.Open(catalogPath);
     }
+
+
+    public Directory CachedDirectory { get; }
 
     public override string[] ListAll()
     {
@@ -31,13 +48,14 @@ public class StorageDirectory : BaseDirectory
 
     public override long FileLength(string name)
     {
-        // throw new NotImplementedException();
-        return 10;
+        var blob = _storage.DownloadAsync(name).Result;
+
+        return blob.FileStream.Length;
     }
 
     public override IndexOutput CreateOutput(string name, IOContext context)
     {
-        IndexOutput output = new StorageIndexOutput();
+        IndexOutput output = new StorageIndexOutput(name, this);
 
         return output;
     }
@@ -49,17 +67,14 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        IndexInput input = new StorageIndexInput("fdsfsd");
-        // throw new NotImplementedException();
+        var dfs = FileExists(name);
+        IndexInput input = new StorageIndexInput(name, this);
         return input;
     }
 
-    private Dictionary<string, StorageLock> _locks = new Dictionary<string, StorageLock>();
+    private readonly Dictionary<string, StorageLock> _locks = new();
 
-    /// <summary>Construct a {@link Lock}.</summary>
-    /// <param name="name">the name of the lock file
-    /// </param>
-    public override Lock MakeLock(System.String name)
+    public override Lock MakeLock(string name)
     {
         lock (_locks)
         {
