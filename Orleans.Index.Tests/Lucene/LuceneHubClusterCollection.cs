@@ -1,3 +1,5 @@
+using ManagedCode.Storage.Core;
+using ManagedCode.Storage.FileSystem.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Index.Annotations;
 using Orleans.Index.Tests.Cluster;
@@ -17,6 +19,7 @@ public class LuceneHubClusterCollection : ICollectionFixture<LuceneHubClusterCol
             {
                 collection.AddLogging();
                 collection.AddSingleton<IIndexService>(FakeServices.FakeLuceneIndexService);
+                collection.AddSingleton<IStorage>(FakeServices.FakeStorage);
             };
         }
     }
