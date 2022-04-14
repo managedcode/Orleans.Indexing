@@ -1,6 +1,6 @@
 using Lucene.Net.Store;
 
-namespace Orleans.Index.Lucene;
+namespace Orleans.Index.Lucene.Storage;
 
 public class StorageLock : Lock
 {

@@ -12,16 +12,16 @@ public class StorageDirectory : BaseDirectory
     {
         _storage = storage;
 
-        var cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "AzureDirectory");
+        var cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "storage");
         var azureDir = new DirectoryInfo(cachePath);
-        if (!azureDir.Exists)
-            azureDir.Create();
+
+        if (!azureDir.Exists) azureDir.Create();
 
         var catalogPath = Path.Combine(cachePath, "catalog");
 
         var catalogDir = new DirectoryInfo(catalogPath);
-        if (!catalogDir.Exists)
-            catalogDir.Create();
+
+        if (!catalogDir.Exists) catalogDir.Create();
 
         CachedDirectory = FSDirectory.Open(catalogPath);
     }
@@ -55,7 +55,7 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexOutput CreateOutput(string name, IOContext context)
     {
-        IndexOutput output = new StorageIndexOutput(name, this);
+        IndexOutput output = CachedDirectory.CreateOutput(name, context);
 
         return output;
     }
@@ -67,8 +67,7 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        var dfs = FileExists(name);
-        IndexInput input = new StorageIndexInput(name, this);
+        IndexInput input = CachedDirectory.OpenInput(name, context);
         return input;
     }
 
