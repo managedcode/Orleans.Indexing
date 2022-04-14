@@ -14,7 +14,7 @@ public class FakeServices
     {
         FileSystemStorageOptions options = new()
         {
-            BaseFolder = System.IO.Path.GetTempPath()
+            BaseFolder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "lucene")
         };
 
         FakeStorage = new FileSystemStorage(options);

@@ -10,6 +10,7 @@ using ManagedCode.Storage.Core;
 using Orleans.Concurrency;
 using Orleans.Index.Annotations;
 using Orleans.Index.Lucene.Storage;
+using Directory = Lucene.Net.Store.Directory;
 
 namespace Orleans.Index.Lucene.Services;
 

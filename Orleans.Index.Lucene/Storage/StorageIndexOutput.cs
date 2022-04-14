@@ -1,39 +1,47 @@
 using Lucene.Net.Store;
 
-namespace Orleans.Index.Lucene;
+namespace Orleans.Index.Lucene.Storage;
 
 public class StorageIndexOutput : IndexOutput
 {
+    private readonly StorageDirectory _directory;
+    private readonly IndexOutput _indexOutput;
+
+    public StorageIndexOutput(string name, StorageDirectory directory)
+    {
+        _directory = directory;
+        _indexOutput = _directory.CreateOutput(name, IOContext.DEFAULT);
+    }
+
     public override void WriteByte(byte b)
     {
-        // throw new NotImplementedException();
+        _indexOutput.WriteByte(b);
     }
 
     public override void WriteBytes(byte[] b, int offset, int length)
     {
-        // throw new NotImplementedException();
+        _indexOutput.WriteBytes(b, offset, length);
     }
 
     public override void Flush()
     {
-        // throw new NotImplementedException();
+        _indexOutput.Flush();
     }
 
     protected override void Dispose(bool disposing)
     {
-        // throw new NotImplementedException();
+        _indexOutput.Dispose();
     }
 
     public override long GetFilePointer()
     {
-        // throw new NotImplementedException();
-        return 10;
+        return _indexOutput.GetFilePointer();
     }
 
     public override void Seek(long pos)
     {
-        // throw new NotImplementedException();
+        _indexOutput.Seek(pos);
     }
 
-    public override long Checksum { get; }
+    public override long Checksum => _indexOutput.Checksum;
 }
