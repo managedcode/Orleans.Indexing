@@ -10,6 +10,7 @@ using ManagedCode.Storage.Core;
 using Orleans.Concurrency;
 using Orleans.Index.Annotations;
 using Orleans.Index.Lucene.Storage;
+using Orleans.Index.Lucene.Temp;
 using Directory = Lucene.Net.Store.Directory;
 
 namespace Orleans.Index.Lucene.Services;
@@ -43,10 +44,10 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     // Ensures index backward compatibility
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
-    private BaseDirectory GetDirectory() => new StorageDirectory(_storage);
+    private Directory GetDirectory() => new AzureDirectory(_storage);
 
 
-    private readonly BaseDirectory _indexDirectory;
+    private readonly Directory _indexDirectory;
     private readonly Analyzer _analyzer;
     private readonly IndexWriter _indexWriter;
     private DirectoryReader _directoryReader;

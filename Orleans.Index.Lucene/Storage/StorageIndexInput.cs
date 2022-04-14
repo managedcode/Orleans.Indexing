@@ -13,15 +13,15 @@ public class StorageIndexInput : IndexInput
     public StorageIndexInput(string name, StorageDirectory directory) : base(name)
     {
         _directory = directory;
-        
-        if (!directory.FileExists(name))
-        {
-            using (var output = directory.CachedDirectory.CreateOutput(name, IOContext.DEFAULT))
-            {
-                // get the blob
-                output.Flush();
-            }
-        }
+
+        // if (!directory.FileExists(name))
+        // {
+        //     using (var output = directory.CachedDirectory.CreateOutput(name, IOContext.DEFAULT))
+        //     {
+        //         // get the blob
+        //         output.Flush();
+        //     }
+        // }
 
         _indexInput = _directory.CachedDirectory.OpenInput(name, IOContext.DEFAULT);
     }
