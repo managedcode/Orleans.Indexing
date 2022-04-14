@@ -6,17 +6,43 @@ using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
+using ManagedCode.Storage.Core;
 using Orleans.Concurrency;
 using Orleans.Index.Annotations;
+using Orleans.Index.Lucene.Storage;
 
 namespace Orleans.Index.Lucene.Services;
 
 [Reentrant]
 public class LuceneIndexService : IIndexService, IDisposable
 {
+    private readonly IStorage _storage;
+
+    public LuceneIndexService(IStorage storage)
+    {
+        _storage = storage;
+
+        _indexDirectory = GetDirectory();
+        _analyzer = new StandardAnalyzer(AppLuceneVersion);
+        var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
+        try
+        {
+            _indexWriter = new IndexWriter(_indexDirectory, config);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
+        _indexWriter.Commit();
+        _directoryReader = DirectoryReader.Open(_indexDirectory);
+        _indexSearcher = new IndexSearcher(_directoryReader);
+    }
+
     // Ensures index backward compatibility
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
-    private static BaseDirectory GetDirectory() => new RAMDirectory();
+    private BaseDirectory GetDirectory() => new StorageDirectory(_storage);
 
 
     private readonly BaseDirectory _indexDirectory;
@@ -24,17 +50,6 @@ public class LuceneIndexService : IIndexService, IDisposable
     private readonly IndexWriter _indexWriter;
     private DirectoryReader _directoryReader;
     private IndexSearcher _indexSearcher;
-
-    public LuceneIndexService()
-    {
-        _indexDirectory = GetDirectory();
-        _analyzer = new StandardAnalyzer(AppLuceneVersion);
-        var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
-        _indexWriter = new IndexWriter(_indexDirectory, config);
-        _indexWriter.Commit();
-        _directoryReader = DirectoryReader.Open(_indexDirectory);
-        _indexSearcher = new IndexSearcher(_directoryReader);
-    }
 
     public Task WriteIndex(GrainDocument document) => Task.Run(() => { });
 
@@ -86,6 +101,7 @@ public class LuceneIndexService : IIndexService, IDisposable
 
         return ids;
     });
+
 
     public void Dispose()
     {
