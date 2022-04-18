@@ -48,9 +48,9 @@ public class StorageDirectory : BaseDirectory
 
     public override long FileLength(string name)
     {
-        var blob = _storage.DownloadAsync(name).Result;
+        var blob = _storage.GetBlobAsync(name).Result;
 
-        return blob.FileStream.Length;
+        return blob.Length;
     }
 
     public override IndexOutput CreateOutput(string name, IOContext context)
@@ -78,7 +78,7 @@ public class StorageDirectory : BaseDirectory
         lock (_locks)
         {
             if (!_locks.ContainsKey(name))
-                _locks.Add(name, new StorageLock());
+                _locks.Add(name, new StorageLock(_storage, name));
             return _locks[name];
         }
     }
@@ -89,7 +89,7 @@ public class StorageDirectory : BaseDirectory
         {
             if (_locks.ContainsKey(name))
             {
-                // _locks[name].BreakLock();
+                _locks[name].BreakLock();
             }
         }
 

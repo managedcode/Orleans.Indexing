@@ -1,13 +1,31 @@
 using Lucene.Net.Store;
+using ManagedCode.Storage.Core;
 
 namespace Orleans.Index.Lucene.Storage;
 
 public class StorageLock : Lock
 {
+    private readonly IStorage _storage;
+    private readonly string _fileName;
+
+    public StorageLock(IStorage storage, string fileName)
+    {
+        _storage = storage;
+        _fileName = fileName;
+    }
+
     public override bool Obtain()
     {
-        // throw new NotImplementedException();
-        return true;
+        try
+        {
+            _storage.SetLegalHold(_fileName, true);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -17,8 +35,11 @@ public class StorageLock : Lock
 
     public override bool IsLocked()
     {
-        // throw new NotImplementedException();
+        return _storage.HasLegalHold(_fileName).Result;
+    }
 
-        return false;
+    public void BreakLock()
+    {
+        _storage.SetLegalHold(_fileName, false);
     }
 }
