@@ -1,5 +1,6 @@
-using ManagedCode.Storage.FileSystem;
-using ManagedCode.Storage.FileSystem.Options;
+using Azure.Storage.Blobs.Models;
+using ManagedCode.Storage.Azure;
+using ManagedCode.Storage.Azure.Options;
 using ManagedCode.Storage.Core;
 using Orleans.Index.Lucene.Services;
 
@@ -12,12 +13,14 @@ public class FakeServices
 
     static FakeServices()
     {
-        FileSystemStorageOptions options = new()
+        AzureStorageOptions options = new()
         {
-            BaseFolder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "lucene")
+            ConnectionString =
+                "DefaultEndpointsProtocol=https;AccountName=winktblobtest;AccountKey=V7wWKnqRsSPqog4NhVchzguMBc6aDw6LHjD0Si/z1mAUYGaWNpUccoxitFHeVsQPmmIOsQrUbSm7+AStw+amcg==;EndpointSuffix=core.windows.net",
+            Container = "lucene",
         };
 
-        FakeStorage = new FileSystemStorage(options);
+        FakeStorage = new AzureStorage(options);
         FakeLuceneIndexService = new LuceneIndexService(FakeStorage);
     }
 }

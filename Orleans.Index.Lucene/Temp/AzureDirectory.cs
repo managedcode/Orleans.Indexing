@@ -148,7 +148,7 @@ public class AzureDirectory : Directory
         {
             if (!_locks.ContainsKey(name))
             {
-                _locks.Add(name, new AzureLock(name, this, _storage));
+                _locks.Add(name, new AzureLock(_storage, name));
             }
 
             return _locks[name];
