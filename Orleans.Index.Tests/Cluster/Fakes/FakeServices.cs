@@ -17,7 +17,7 @@ public class FakeServices
         {
             ConnectionString =
                 "DefaultEndpointsProtocol=https;AccountName=winktblobtest;AccountKey=V7wWKnqRsSPqog4NhVchzguMBc6aDw6LHjD0Si/z1mAUYGaWNpUccoxitFHeVsQPmmIOsQrUbSm7+AStw+amcg==;EndpointSuffix=core.windows.net",
-            Container = "lucene",
+            Container = "testcatalog",
         };
 
         FakeStorage = new AzureStorage(options);

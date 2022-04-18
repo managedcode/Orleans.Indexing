@@ -55,9 +55,9 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexOutput CreateOutput(string name, IOContext context)
     {
-        IndexOutput output = CachedDirectory.CreateOutput(name, context);
+        var indexOutput = new StorageIndexOutput(name, this, _storage);
 
-        return output;
+        return indexOutput;
     }
 
     public override void Sync(ICollection<string> names)
@@ -67,7 +67,7 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        return new StorageIndexInput(name, this);
+        return new StorageIndexInput(name, this, _storage);
     }
 
     private readonly Dictionary<string, StorageLock> _locks = new();
@@ -92,7 +92,7 @@ public class StorageDirectory : BaseDirectory
             }
         }
 
-        // _cacheDirectory.ClearLock(name);
+        CachedDirectory.ClearLock(name);
     }
 
     protected override void Dispose(bool disposing)
