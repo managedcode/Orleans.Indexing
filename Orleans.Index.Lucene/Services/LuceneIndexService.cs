@@ -44,7 +44,7 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     // Ensures index backward compatibility
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
-    private Directory GetDirectory() => new AzureDirectory(_storage);
+    private Directory GetDirectory() => new StorageDirectory(_storage);
 
 
     private readonly Directory _indexDirectory;

@@ -67,8 +67,7 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        IndexInput input = CachedDirectory.OpenInput(name, context);
-        return input;
+        return new StorageIndexInput(name, this);
     }
 
     private readonly Dictionary<string, StorageLock> _locks = new();
@@ -99,5 +98,10 @@ public class StorageDirectory : BaseDirectory
     protected override void Dispose(bool disposing)
     {
         // throw new NotImplementedException();
+    }
+
+    public StreamOutput CreateCachedOutputAsStream(string name)
+    {
+        return new StreamOutput(CachedDirectory.CreateOutput(name, IOContext.DEFAULT));
     }
 }
