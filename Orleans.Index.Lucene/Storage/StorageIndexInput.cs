@@ -11,10 +11,12 @@ public class StorageIndexInput : IndexInput
     private readonly StorageDirectory _directory;
     private readonly IndexInput _indexInput;
 
-    public StorageIndexInput(string name, StorageDirectory directory) : base(name)
+    public StorageIndexInput(string name, StorageDirectory directory, IStorage storage) : base(name)
     {
         _fileMutex = StorageMutexManager.GrabMutex(name);
         _fileMutex.WaitOne();
+
+        _storage = storage;
         // _directory = directory;
         //
         // if (!directory.FileExists(name))

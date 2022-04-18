@@ -46,7 +46,6 @@ public class LuceneIndexService : IIndexService, IDisposable
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
     private Directory GetDirectory() => new StorageDirectory(_storage);
 
-
     private readonly Directory _indexDirectory;
     private readonly Analyzer _analyzer;
     private readonly IndexWriter _indexWriter;
