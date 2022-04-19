@@ -55,8 +55,8 @@ public class AzureDirectory : Directory
             Name = catalog.ToLower();
 
         _storage = storage;
-        this.containerName = Name.Split('/').First();
-        this.subDirectory = String.Join("/", Name.Split('/').Skip(1));
+        containerName = Name.Split('/').First();
+        subDirectory = String.Join("/", Name.Split('/').Skip(1));
 
         _initCacheDirectory(cacheDirectory);
     }
@@ -71,7 +71,7 @@ public class AzureDirectory : Directory
 
     public void ClearCache()
     {
-        if (this.CacheDirectory != null)
+        if (CacheDirectory != null)
         {
             foreach (string file in CacheDirectory.ListAll())
             {
@@ -197,7 +197,7 @@ public class AzureDirectory : Directory
 
     public string GetBlobName(string name)
     {
-        if (this.subDirectory.Length > 1)
+        if (subDirectory.Length > 1)
         {
             return $"{subDirectory}/{name}";
         }
@@ -210,33 +210,33 @@ public class AzureDirectory : Directory
         if (cacheDirectory != null)
         {
             // save it off
-            this.CacheDirectory = cacheDirectory;
+            CacheDirectory = cacheDirectory;
         }
         else
         {
-            string cachePath = System.IO.Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "lucene");
-            System.IO.DirectoryInfo azureDir = new System.IO.DirectoryInfo(cachePath);
+            string cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "lucene");
+            DirectoryInfo azureDir = new DirectoryInfo(cachePath);
             if (!azureDir.Exists)
                 azureDir.Create();
 
-            string catalogPath = System.IO.Path.Combine(cachePath, this.Name);
+            string catalogPath = Path.Combine(cachePath, Name);
 
-            System.IO.DirectoryInfo catalogDir = new System.IO.DirectoryInfo(catalogPath);
+            DirectoryInfo catalogDir = new DirectoryInfo(catalogPath);
             if (!catalogDir.Exists)
                 catalogDir.Create();
 
-            this.CacheDirectory = FSDirectory.Open(catalogPath);
+            CacheDirectory = FSDirectory.Open(catalogPath);
         }
     }
 
     public StreamInput OpenCachedInputAsStream(string name)
     {
-        return new StreamInput(this.CacheDirectory.OpenInput(name, IOContext.DEFAULT));
+        return new StreamInput(CacheDirectory.OpenInput(name, IOContext.DEFAULT));
     }
 
     public StreamOutput CreateCachedOutputAsStream(string name)
     {
-        return new StreamOutput(this.CacheDirectory.CreateOutput(name, IOContext.DEFAULT));
+        return new StreamOutput(CacheDirectory.CreateOutput(name, IOContext.DEFAULT));
     }
 
     #endregion

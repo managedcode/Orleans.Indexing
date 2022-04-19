@@ -1,22 +1,25 @@
+using System.Diagnostics;
 using Lucene.Net.Store;
 using ManagedCode.Storage.Core;
-using Directory = Lucene.Net.Store.Directory;
 
 namespace Orleans.Index.Lucene.Storage;
 
 public class StorageIndexInput : IndexInput
 {
+    private readonly string _name;
     private readonly Mutex _fileMutex;
     private readonly IStorage _storage;
     private readonly StorageDirectory _directory;
-    private readonly IndexInput _indexInput;
+    private IndexInput _indexInput;
 
     public StorageIndexInput(string name, StorageDirectory directory, IStorage storage) : base(name)
     {
+        _name = name;
+        _storage = storage;
+        _directory = directory;
+
         _fileMutex = StorageMutexManager.GrabMutex(name);
         _fileMutex.WaitOne();
-
-        _storage = storage;
 
         bool fileNeeded = false;
 
@@ -60,16 +63,25 @@ public class StorageIndexInput : IndexInput
 
     public override void ReadBytes(byte[] b, int offset, int len)
     {
+        if (len == 316)
+            Debugger.Break();
+
         _indexInput.ReadBytes(b, offset, len);
     }
 
     protected override void Dispose(bool disposing)
     {
         _fileMutex.WaitOne();
-
-        _indexInput.Dispose();
-
-        _fileMutex.ReleaseMutex();
+        try
+        {
+            _indexInput.Dispose();
+            _indexInput = null;
+            GC.SuppressFinalize(this);
+        }
+        finally
+        {
+            _fileMutex.ReleaseMutex();
+        }
     }
 
     public override long GetFilePointer()
@@ -83,4 +95,11 @@ public class StorageIndexInput : IndexInput
     }
 
     public override long Length => _indexInput.Length;
+
+    public override object Clone()
+    {
+        var clone = new StorageIndexInput(_name, _directory, _storage);
+        clone.Seek(GetFilePointer());
+        return clone;
+    }
 }

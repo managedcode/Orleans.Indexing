@@ -46,7 +46,7 @@ public class StreamOutput : Stream
                 Output.Seek(Output.GetFilePointer() + offset);
                 break;
             case SeekOrigin.End:
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
         }
         return Output.GetFilePointer();
     }

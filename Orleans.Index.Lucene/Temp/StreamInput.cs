@@ -53,19 +53,19 @@ namespace Orleans.Index.Lucene.Temp
                     Input.Seek(Input.GetFilePointer() + offset);
                     break;
                 case SeekOrigin.End:
-                    throw new System.NotImplementedException();
+                    throw new NotImplementedException();
             }
             return Input.GetFilePointer();
         }
 
         public override void SetLength(long value)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public override void Close()

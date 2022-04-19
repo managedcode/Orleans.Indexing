@@ -21,8 +21,8 @@ namespace Orleans.Index.Lucene.Temp
         public AzureIndexInput(AzureDirectory azureDirectory, string name, IStorage storage)
             : base(name)
         {
-            this._name = name;
-            this._azureDirectory = azureDirectory;
+            _name = name;
+            _azureDirectory = azureDirectory;
 #if FULLDEBUG
             Debug.WriteLine($"{_azureDirectory.Name} opening {name} ");
 #endif
@@ -122,8 +122,8 @@ namespace Orleans.Index.Lucene.Temp
 
         public override Object Clone()
         {
-            var clone = new AzureIndexInput(this._azureDirectory, this._name, this._storage);
-            clone.Seek(this.GetFilePointer());
+            var clone = new AzureIndexInput(_azureDirectory, _name, _storage);
+            clone.Seek(GetFilePointer());
             return clone;
         }
     }

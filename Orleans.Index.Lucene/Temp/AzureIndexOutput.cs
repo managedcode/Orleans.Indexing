@@ -18,7 +18,7 @@ namespace Orleans.Index.Lucene.Temp
 
         public AzureIndexOutput(AzureDirectory azureDirectory, string name, IStorage storage)
         {
-            this._name = name;
+            _name = name;
             _fileMutex = BlobMutexManager.GrabMutex(_name);
             _fileMutex.WaitOne();
             try
