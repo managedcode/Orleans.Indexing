@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Lucene.Net.Store;
 using ManagedCode.Storage.Core;
 using Directory = Lucene.Net.Store.Directory;
@@ -74,10 +75,19 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        if (!_storage.ExistsAsync(name).Result)
-            throw new FileNotFoundException(name);
-
-        return new StorageIndexInput(name, this, _storage);
+        try
+        {
+            var blob = _storage.GetBlobAsync(name).Result;
+            return new StorageIndexInput(name, this, _storage);
+        }
+        catch (Exception err)
+        {
+            Debug.WriteLine($"throw exception in openinput {name}");
+            throw new FileNotFoundException(name, err);
+        }
+        //
+        // if (!_storage.ExistsAsync(name).Result)
+        //     throw new FileNotFoundException(name);
     }
 
     private readonly Dictionary<string, StorageLock> _locks = new();

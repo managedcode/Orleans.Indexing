@@ -27,15 +27,9 @@ public class LuceneIndexService : IIndexService, IDisposable
         _indexDirectory = GetDirectory();
         _analyzer = new StandardAnalyzer(AppLuceneVersion);
         var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
-        try
-        {
-            _indexWriter = new IndexWriter(_indexDirectory, config);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+
+        _indexWriter = new IndexWriter(_indexDirectory, config);
+
 
         _indexWriter.Commit();
         _directoryReader = DirectoryReader.Open(_indexDirectory);

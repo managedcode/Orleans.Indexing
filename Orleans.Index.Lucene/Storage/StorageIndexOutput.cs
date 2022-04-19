@@ -3,7 +3,7 @@ using ManagedCode.Storage.Core;
 
 namespace Orleans.Index.Lucene.Storage;
 
-public class StorageIndexOutput : IndexOutput
+public class StorageIndexOutput : IndexOutput, IAsyncDisposable
 {
     private readonly string _name;
     private readonly IStorage _storage;
@@ -18,7 +18,7 @@ public class StorageIndexOutput : IndexOutput
         _name = name;
         _storage = storage;
         _directory = directory;
-        _indexOutput = _directory.CreateOutput(name, IOContext.DEFAULT);
+        _indexOutput = _directory.CachedDirectory.CreateOutput(name, IOContext.DEFAULT);
 
         _fileMutex.ReleaseMutex();
     }
@@ -44,16 +44,35 @@ public class StorageIndexOutput : IndexOutput
         {
             _fileMutex.WaitOne();
 
-            using (var blobStream = new StreamInput(_directory.CachedDirectory.OpenInput(_name, IOContext.DEFAULT)))
-            {
-                _storage.UploadStreamAsync(_name, blobStream).Wait();
-            }
+            _indexOutput.Flush();
+            _indexOutput.Dispose();
+
+            _ = UploadFile();
         }
         finally
         {
-            _indexOutput.Dispose();
-
             _fileMutex.ReleaseMutex();
+        }
+    }
+
+    private async Task UploadFile()
+    {
+        await using (var blobStream = new StreamInput(_directory.CachedDirectory.OpenInput(_name, IOContext.DEFAULT)))
+        {
+            try
+            {
+                await using (var stream = new MemoryStream())
+                {
+                    await blobStream.CopyToAsync(stream);
+                    stream.Position = 0;
+                    await _storage.UploadStreamAsync(_name, stream);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
     }
 
@@ -68,4 +87,8 @@ public class StorageIndexOutput : IndexOutput
     }
 
     public override long Checksum => _indexOutput.Checksum;
+    public ValueTask DisposeAsync()
+    {
+        throw new NotImplementedException();
+    }
 }
