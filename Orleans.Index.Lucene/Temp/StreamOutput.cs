@@ -69,7 +69,7 @@ namespace Orleans.Index.Lucene.Temp
                     Output.Seek(Output.GetFilePointer() + offset);
                     break;
                 case SeekOrigin.End:
-                    throw new System.NotImplementedException();
+                    throw new NotImplementedException();
             }
             return Output.GetFilePointer();
         }
