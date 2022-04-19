@@ -17,20 +17,9 @@ public class StorageIndexInput : IndexInput
         _fileMutex.WaitOne();
 
         _storage = storage;
-        // _directory = directory;
-        //
-        // if (!directory.FileExists(name))
-        // {
-        //     using (var output = directory.CachedDirectory.CreateOutput(name, IOContext.DEFAULT))
-        //     {
-        //         // get the blob
-        //         output.Flush();
-        //     }
-        // }
-        //
-        // _indexInput = _directory.CachedDirectory.OpenInput(name, IOContext.DEFAULT);
 
         bool fileNeeded = false;
+
         if (!directory.CachedDirectory.FileExists(name))
         {
             fileNeeded = true;
