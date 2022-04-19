@@ -7,6 +7,7 @@ namespace Orleans.Index.Lucene.Storage;
 public class StorageDirectory : BaseDirectory
 {
     private readonly IStorage _storage;
+    private readonly Dictionary<string, StorageIndexOutput> _nameCache = new();
 
     public StorageDirectory(IStorage storage)
     {
@@ -62,11 +63,20 @@ public class StorageDirectory : BaseDirectory
 
     public override void Sync(ICollection<string> names)
     {
-        // throw new NotImplementedException();
+        foreach (var name in names)
+        {
+            if (_nameCache.ContainsKey(name))
+            {
+                _nameCache[name].Flush();
+            }
+        }
     }
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
+        if (!_storage.ExistsAsync(name).Result)
+            throw new FileNotFoundException(name);
+
         return new StorageIndexInput(name, this, _storage);
     }
 
