@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Lucene.Net.Analysis;
@@ -127,7 +128,7 @@ public class LuceneIndexTests
     [Fact]
     public async Task GetGrainIds()
     {
-        const int count = 3;
+        const int count = 5;
         const int intValue = 10;
 
         for (var i = 0; i < count; i++)
@@ -145,5 +146,11 @@ public class LuceneIndexTests
         var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
 
         ids.Count.Should().Be(count);
+
+        // var blobs = await FakeServices.FakeStorage
+        //     .GetBlobListAsync()
+        //     .ToListAsync();
+        //
+        // await FakeServices.FakeStorage.DeleteAsync(blobs);
     }
 }

@@ -4,7 +4,7 @@ namespace Orleans.Index.Lucene.Storage;
 
 public class StreamInput : Stream
 {
-    public IndexInput Input { get; set; }
+    public IndexInput Input { get; }
 
     public StreamInput(IndexInput input)
     {

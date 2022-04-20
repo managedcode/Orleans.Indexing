@@ -4,7 +4,7 @@ namespace Orleans.Index.Lucene.Storage;
 
 public class StreamOutput : Stream
 {
-    public IndexOutput Output { get; set; }
+    public IndexOutput Output { get; }
 
     public StreamOutput(IndexOutput output)
     {
@@ -48,6 +48,7 @@ public class StreamOutput : Stream
             case SeekOrigin.End:
                 throw new NotImplementedException();
         }
+
         return Output.GetFilePointer();
     }
 

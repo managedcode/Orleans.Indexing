@@ -4,13 +4,11 @@ using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
-using Lucene.Net.Store;
 using Lucene.Net.Util;
 using ManagedCode.Storage.Core;
 using Orleans.Concurrency;
 using Orleans.Index.Annotations;
 using Orleans.Index.Lucene.Storage;
-using Orleans.Index.Lucene.Temp;
 using Directory = Lucene.Net.Store.Directory;
 
 namespace Orleans.Index.Lucene.Services;
@@ -72,7 +70,8 @@ public class LuceneIndexService : IIndexService, IDisposable
         var query = parser.Parse(document.LuceneDocument.GetField(Constants.GrainId).GetStringValue());
         _indexWriter.DeleteDocuments(query);
         _indexWriter.AddDocument(document.LuceneDocument);
-        // _indexWriter.Commit();
+        
+        _indexWriter.Commit();
 
         _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
         _indexSearcher = new IndexSearcher(_directoryReader);

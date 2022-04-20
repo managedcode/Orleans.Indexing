@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Lucene.Net.Store;
 using ManagedCode.Storage.Core;
 using Directory = Lucene.Net.Store.Directory;
@@ -8,108 +7,105 @@ namespace Orleans.Index.Lucene.Storage;
 public class StorageDirectory : BaseDirectory
 {
     private readonly IStorage _storage;
-    private readonly Dictionary<string, StorageIndexOutput> _nameCache = new();
 
     public StorageDirectory(IStorage storage)
     {
         _storage = storage;
-
-        // var cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "storage");
-        // var azureDir = new DirectoryInfo(cachePath);
-        //
-        // if (!azureDir.Exists) azureDir.Create();
-        //
-        // var catalogPath = Path.Combine(cachePath, "catalog");
-        //
-        // var catalogDir = new DirectoryInfo(catalogPath);
-        //
-        // if (!catalogDir.Exists) catalogDir.Create();
-
         CachedDirectory = new RAMDirectory();
-    }
 
+        LoadFilesFromStorage();
+    }
 
     public Directory CachedDirectory { get; }
 
     public override string[] ListAll()
     {
-        var blobs = _storage.GetBlobList().ToArray();
-
-        return blobs.Select(b => b.Name).ToArray();
+        return CachedDirectory.ListAll();
     }
 
     public override bool FileExists(string name)
     {
-        return _storage.Exists(name);
+        return CachedDirectory.FileExists(name);
     }
 
     public override void DeleteFile(string name)
     {
-        _storage.Delete(name);
+        CachedDirectory.DeleteFile(name);
+
+        // if (_storage.Exists(name))
+        //     _storage.Delete(name);
     }
 
     public override long FileLength(string name)
     {
-        var blob = _storage.GetBlob(name);
-
-        return blob.Length;
+        return CachedDirectory.FileLength(name);
     }
 
     public override IndexOutput CreateOutput(string name, IOContext context)
     {
-        var indexOutput = new StorageIndexOutput(name, this, _storage);
-
-        return indexOutput;
+        return CachedDirectory.CreateOutput(name, context);
     }
 
     public override void Sync(ICollection<string> names)
     {
         foreach (var name in names)
         {
-            if (_nameCache.ContainsKey(name))
-            {
-                _nameCache[name].Flush();
-            }
+            UploadFile(name);
         }
     }
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        return new StorageIndexInput(name, this, _storage);
-        //
-        // if (!_storage.ExistsAsync(name).Result)
-        //     throw new FileNotFoundException(name);
+        return CachedDirectory.OpenInput(name, context);
     }
-
-    private readonly Dictionary<string, StorageLock> _locks = new();
 
     public override Lock MakeLock(string name)
     {
-        lock (_locks)
-        {
-            if (!_locks.ContainsKey(name))
-                _locks.Add(name, new StorageLock(_storage, name));
-
-            return _locks[name];
-        }
+        return CachedDirectory.MakeLock(name);
     }
 
     public override void ClearLock(string name)
     {
-        lock (_locks)
+        CachedDirectory.ClearLock(name);
+    }
+
+    private void UploadFile(string name)
+    {
+        using (var blobStream = new StreamInput(CachedDirectory.OpenInput(name, IOContext.DEFAULT)))
         {
-            if (_locks.ContainsKey(name))
+            try
             {
-                _locks[name].BreakLock();
+                _storage.UploadStream(name, blobStream);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
             }
         }
-
-        CachedDirectory.ClearLock(name);
     }
 
     protected override void Dispose(bool disposing)
     {
-        // throw new NotImplementedException();
+    }
+
+    public void LoadFilesFromStorage()
+    {
+        var files = _storage.GetBlobList();
+
+        foreach (var file in files)
+        {
+            using (var fileStream = CreateCachedOutputAsStream(file.Name))
+            {
+                // get the blob
+                var stream = _storage.DownloadAsStream(file)!;
+                stream.CopyTo(fileStream);
+
+                stream.Dispose();
+
+                fileStream.Flush();
+            }
+        }
     }
 
     public StreamOutput CreateCachedOutputAsStream(string name)
