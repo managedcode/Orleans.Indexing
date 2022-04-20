@@ -128,7 +128,7 @@ public class LuceneIndexTests
     [Fact]
     public async Task GetGrainIds()
     {
-        const int count = 5;
+        const int count = 1;
         const int intValue = 10;
 
         for (var i = 0; i < count; i++)

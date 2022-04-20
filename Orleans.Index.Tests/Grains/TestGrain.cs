@@ -22,6 +22,8 @@ public class TestGrain : IndexGrain, ITestGrain
 
     public override async Task OnActivateAsync()
     {
+        await base.OnActivateAsync();
+
         Class = new TestClass {IntValue = 3, StringValue = "Test"};
 
         await WriteIndexAsync();
