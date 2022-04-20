@@ -39,7 +39,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         _analyzer = new StandardAnalyzer(AppLuceneVersion);
     }
 
-    public IndexWriter GetIndexWriter(string grainId)
+    public Task InitDirectory(string grainId)
     {
         var directory = FSDirectory.Open(new DirectoryInfo(_indexPath));
 
@@ -52,7 +52,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         _reader = new MultiReader(readers);
         _indexSearcher = new IndexSearcher(_reader);
 
-        return indexWriter;
+        return Task.CompletedTask;
     }
 
     // public Task<TopDocs> QueryByField(string field, string query, int take = 1000) => Task.Run(() =>
@@ -111,6 +111,12 @@ public class LuceneIndexService : IIndexService, IDisposable
     {
         var blobs = _storage.GetBlobList().ToList();
 
+        if (!Directory.Exists(_indexPath))
+        {
+            Directory.CreateDirectory(_indexPath);
+        }
+
+
         foreach (var blob in blobs)
         {
             var path = Path.Combine(_indexPath, blob.Name);
@@ -120,6 +126,7 @@ public class LuceneIndexService : IIndexService, IDisposable
             {
                 file.FileStream.CopyToAsync(stream);
                 file.Close();
+                stream.Flush();
             }
         }
     }
