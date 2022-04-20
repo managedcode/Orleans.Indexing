@@ -30,7 +30,7 @@ public class StorageIndexInput : IndexInput
         else
         {
             long cachedLength = directory.CachedDirectory.FileLength(name);
-            long blobLength = _storage.GetBlobAsync(name).Result.Length;
+            long blobLength = _storage.GetBlob(name).Length;
 
             if (cachedLength != blobLength)
                 fileNeeded = true;
@@ -43,7 +43,7 @@ public class StorageIndexInput : IndexInput
             using (StreamOutput fileStream = directory.CreateCachedOutputAsStream(name))
             {
                 // get the blob
-                var stream = _storage.DownloadAsStreamAsync(name).Result;
+                var stream = _storage.DownloadAsStream(name);
                 stream.CopyTo(fileStream);
 
                 fileStream.Flush();

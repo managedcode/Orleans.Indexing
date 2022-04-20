@@ -39,7 +39,7 @@ public class StorageLock : Lock
     {
         CheckFileAndUpload();
 
-        return _storage.HasLegalHold(_fileName).Result;
+        return _storage.HasLegalHold(_fileName);
     }
 
     public void BreakLock()
@@ -49,7 +49,7 @@ public class StorageLock : Lock
 
     private void CheckFileAndUpload()
     {
-        if (_storage.ExistsAsync(_fileName).Result)
+        if (_storage.Exists(_fileName))
         {
             return;
         }
@@ -58,7 +58,7 @@ public class StorageLock : Lock
         using (var writer = new StreamWriter(stream))
         {
             writer.Write(_fileName);
-            _storage.UploadStreamAsync(_fileName, stream).Wait();
+            _storage.UploadStream(_fileName, stream);
         }
     }
 }
