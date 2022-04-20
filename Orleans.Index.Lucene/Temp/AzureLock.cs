@@ -35,7 +35,7 @@ public class AzureLock : Lock
 
     public override bool IsLocked()
     {
-        return _storage.HasLegalHold(_fileName).Result;
+        return _storage.HasLegalHold(_fileName);
     }
 
     public void BreakLock()

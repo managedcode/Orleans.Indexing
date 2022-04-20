@@ -33,24 +33,24 @@ public class StorageDirectory : BaseDirectory
 
     public override string[] ListAll()
     {
-        var blobs = _storage.GetBlobListAsync().ToArrayAsync().Result;
+        var blobs = _storage.GetBlobList().ToArray();
 
         return blobs.Select(b => b.Name).ToArray();
     }
 
     public override bool FileExists(string name)
     {
-        return _storage.ExistsAsync(name).Result;
+        return _storage.Exists(name);
     }
 
     public override void DeleteFile(string name)
     {
-        _storage.DeleteAsync(name).Wait();
+        _storage.Delete(name);
     }
 
     public override long FileLength(string name)
     {
-        var blob = _storage.GetBlobAsync(name).Result;
+        var blob = _storage.GetBlob(name);
 
         return blob.Length;
     }
@@ -77,7 +77,7 @@ public class StorageDirectory : BaseDirectory
     {
         try
         {
-            var blob = _storage.GetBlobAsync(name).Result;
+            var blob = _storage.GetBlob(name);
             return new StorageIndexInput(name, this, _storage);
         }
         catch (Exception err)
