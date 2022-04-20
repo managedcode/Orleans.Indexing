@@ -127,7 +127,7 @@ public class LuceneIndexTests
     [Fact]
     public async Task GetGrainIds()
     {
-        const int count = 5;
+        const int count = 1;
         const int intValue = 10;
 
         for (var i = 0; i < count; i++)
@@ -136,11 +136,11 @@ public class LuceneIndexTests
             await grain.UpdateIntValue(intValue);
         }
 
-        for (var i = 0; i < count; i++)
-        {
-            var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
-            await grain.UpdateIntValue(3);
-        }
+        // for (var i = 0; i < count; i++)
+        // {
+        //     var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
+        //     await grain.UpdateIntValue(3);
+        // }
 
         var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
 
