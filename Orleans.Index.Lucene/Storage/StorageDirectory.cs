@@ -14,18 +14,18 @@ public class StorageDirectory : BaseDirectory
     {
         _storage = storage;
 
-        var cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "storage");
-        var azureDir = new DirectoryInfo(cachePath);
+        // var cachePath = Path.Combine(Environment.ExpandEnvironmentVariables("%temp%"), "storage");
+        // var azureDir = new DirectoryInfo(cachePath);
+        //
+        // if (!azureDir.Exists) azureDir.Create();
+        //
+        // var catalogPath = Path.Combine(cachePath, "catalog");
+        //
+        // var catalogDir = new DirectoryInfo(catalogPath);
+        //
+        // if (!catalogDir.Exists) catalogDir.Create();
 
-        if (!azureDir.Exists) azureDir.Create();
-
-        var catalogPath = Path.Combine(cachePath, "catalog");
-
-        var catalogDir = new DirectoryInfo(catalogPath);
-
-        if (!catalogDir.Exists) catalogDir.Create();
-
-        CachedDirectory = FSDirectory.Open(catalogPath);
+        CachedDirectory = new RAMDirectory();
     }
 
 
@@ -75,16 +75,7 @@ public class StorageDirectory : BaseDirectory
 
     public override IndexInput OpenInput(string name, IOContext context)
     {
-        try
-        {
-            var blob = _storage.GetBlob(name);
-            return new StorageIndexInput(name, this, _storage);
-        }
-        catch (Exception err)
-        {
-            Debug.WriteLine($"throw exception in openinput {name}");
-            throw new FileNotFoundException(name, err);
-        }
+        return new StorageIndexInput(name, this, _storage);
         //
         // if (!_storage.ExistsAsync(name).Result)
         //     throw new FileNotFoundException(name);
@@ -98,6 +89,7 @@ public class StorageDirectory : BaseDirectory
         {
             if (!_locks.ContainsKey(name))
                 _locks.Add(name, new StorageLock(_storage, name));
+
             return _locks[name];
         }
     }

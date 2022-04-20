@@ -21,39 +21,44 @@ public class StorageIndexInput : IndexInput
         _fileMutex = StorageMutexManager.GrabMutex(name);
         _fileMutex.WaitOne();
 
-        bool fileNeeded = false;
-
-        if (!directory.CachedDirectory.FileExists(name))
+        try
         {
-            fileNeeded = true;
-        }
-        else
-        {
-            long cachedLength = directory.CachedDirectory.FileLength(name);
-            long blobLength = _storage.GetBlob(name).Length;
+            var fileNeeded = false;
 
-            if (cachedLength != blobLength)
-                fileNeeded = true;
-        }
-
-        // if the file does not exist
-        // or if it exists and it is older then the lastmodified time in the blobproperties (which always comes from the blob storage)
-        if (fileNeeded)
-        {
-            using (StreamOutput fileStream = directory.CreateCachedOutputAsStream(name))
+            if (!directory.CachedDirectory.FileExists(name))
             {
-                // get the blob
-                var stream = _storage.DownloadAsStream(name);
-                stream.CopyTo(fileStream);
-
-                fileStream.Flush();
+                fileNeeded = true;
             }
+            else
+            {
+                var cachedLength = directory.CachedDirectory.FileLength(name);
+                var blobLength = _storage.GetBlob(name).Length;
+
+                if (cachedLength != blobLength)
+                    fileNeeded = true;
+            }
+
+            // if the file does not exist
+            // or if it exists and it is older then the lastmodified time in the blobproperties (which always comes from the blob storage)
+            if (fileNeeded)
+            {
+                using (StreamOutput fileStream = directory.CreateCachedOutputAsStream(name))
+                {
+                    // get the blob
+                    var stream = _storage.DownloadAsStream(name);
+                    stream.CopyTo(fileStream);
+
+                    fileStream.Flush();
+                }
+            }
+
+            // and open it as our input, this is now available forevers until new file comes along
+            _indexInput = directory.CachedDirectory.OpenInput(name, IOContext.DEFAULT);
         }
-
-        // and open it as our input, this is now available forevers until new file comes along
-        _indexInput = directory.CachedDirectory.OpenInput(name, IOContext.DEFAULT);
-
-        _fileMutex.ReleaseMutex();
+        finally
+        {
+            _fileMutex.ReleaseMutex();
+        }
     }
 
     public override byte ReadByte()
@@ -63,20 +68,17 @@ public class StorageIndexInput : IndexInput
 
     public override void ReadBytes(byte[] b, int offset, int len)
     {
-        if (len == 316)
-            Debugger.Break();
-
         _indexInput.ReadBytes(b, offset, len);
     }
 
     protected override void Dispose(bool disposing)
     {
         _fileMutex.WaitOne();
+
         try
         {
             _indexInput.Dispose();
             _indexInput = null;
-            GC.SuppressFinalize(this);
         }
         finally
         {
