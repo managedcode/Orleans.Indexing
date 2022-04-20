@@ -4,47 +4,56 @@ using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
+using Lucene.Net.Store;
 using Lucene.Net.Util;
 using ManagedCode.Storage.Core;
 using Orleans.Concurrency;
 using Orleans.Index.Annotations;
-using Orleans.Index.Lucene.Storage;
-using Directory = Lucene.Net.Store.Directory;
+using Directory = System.IO.Directory;
 
 namespace Orleans.Index.Lucene.Services;
 
 [Reentrant]
 public class LuceneIndexService : IIndexService, IDisposable
 {
+    // Ensures index backward compatibility
+    private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
+
+    private readonly Analyzer _analyzer;
+    private IndexSearcher _indexSearcher;
+
     private readonly IStorage _storage;
+    private readonly string _indexPath;
+    private readonly Dictionary<string, IndexWriter> _writers;
+    private MultiReader _reader;
 
     public LuceneIndexService(IStorage storage)
     {
         _storage = storage;
+        _indexPath = Path.Combine(Path.GetTempPath(), "lucene");
 
-        _indexDirectory = GetDirectory();
+        _writers = new Dictionary<string, IndexWriter>();
+
+        DownloadCache();
+
         _analyzer = new StandardAnalyzer(AppLuceneVersion);
-        var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
-
-        _indexWriter = new IndexWriter(_indexDirectory, config);
-
-
-        _indexWriter.Commit();
-        _directoryReader = DirectoryReader.Open(_indexDirectory);
-        _indexSearcher = new IndexSearcher(_directoryReader);
     }
 
-    // Ensures index backward compatibility
-    private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
-    private Directory GetDirectory() => new StorageDirectory(_storage);
+    public IndexWriter GetIndexWriter(string grainId)
+    {
+        var directory = FSDirectory.Open(new DirectoryInfo(_indexPath));
 
-    private readonly Directory _indexDirectory;
-    private readonly Analyzer _analyzer;
-    private readonly IndexWriter _indexWriter;
-    private DirectoryReader _directoryReader;
-    private IndexSearcher _indexSearcher;
+        var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
+        var indexWriter = new IndexWriter(directory, config);
 
-    public Task WriteIndex(GrainDocument document) => Task.Run(() => { });
+        _writers.Add(grainId, indexWriter);
+
+        var readers = _writers.Select(r => r.Value.GetReader(false)).ToArray();
+        _reader = new MultiReader(readers);
+        _indexSearcher = new IndexSearcher(_reader);
+
+        return indexWriter;
+    }
 
     // public Task<TopDocs> QueryByField(string field, string query, int take = 1000) => Task.Run(() =>
     // {
@@ -68,13 +77,14 @@ public class LuceneIndexService : IIndexService, IDisposable
 
         var parser = new QueryParser(AppLuceneVersion, Constants.GrainId, _analyzer);
         var query = parser.Parse(document.LuceneDocument.GetField(Constants.GrainId).GetStringValue());
-        _indexWriter.DeleteDocuments(query);
-        _indexWriter.AddDocument(document.LuceneDocument);
-        
-        _indexWriter.Commit();
 
-        _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
-        _indexSearcher = new IndexSearcher(_directoryReader);
+        _writers[grainId].DeleteDocuments(query);
+        _writers[grainId].AddDocument(document.LuceneDocument);
+        _writers[grainId].Commit();
+
+        //
+        // _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
+        // _indexSearcher = new IndexSearcher(_directoryReader);
 
         return Task.CompletedTask;
     }
@@ -97,11 +107,42 @@ public class LuceneIndexService : IIndexService, IDisposable
     });
 
 
+    public void DownloadCache()
+    {
+        var blobs = _storage.GetBlobList().ToList();
+
+        foreach (var blob in blobs)
+        {
+            var path = Path.Combine(_indexPath, blob.Name);
+            var file = _storage.Download(blob)!;
+
+            using (var stream = File.Create(path))
+            {
+                file.FileStream.CopyToAsync(stream);
+                file.Close();
+            }
+        }
+    }
+
     public void Dispose()
     {
-        _indexDirectory.Dispose();
-        _directoryReader?.Dispose();
+        UploadFiles();
+
         _analyzer?.Dispose();
-        _indexWriter?.Dispose();
+
+        foreach (var writer in _writers)
+        {
+            writer.Value.Dispose();
+        }
+    }
+
+    private void UploadFiles()
+    {
+        var files = Directory.GetFiles(_indexPath);
+
+        foreach (var file in files)
+        {
+            _storage.Upload(file);
+        }
     }
 }
