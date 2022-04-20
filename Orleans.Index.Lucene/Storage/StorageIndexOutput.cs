@@ -47,7 +47,7 @@ public class StorageIndexOutput : IndexOutput, IAsyncDisposable
             _indexOutput.Flush();
             _indexOutput.Dispose();
 
-            _ = UploadFile();
+            UploadFile();
         }
         finally
         {
@@ -55,17 +55,17 @@ public class StorageIndexOutput : IndexOutput, IAsyncDisposable
         }
     }
 
-    private async Task UploadFile()
+    private void UploadFile()
     {
-        await using (var blobStream = new StreamInput(_directory.CachedDirectory.OpenInput(_name, IOContext.DEFAULT)))
+        using (var blobStream = new StreamInput(_directory.CachedDirectory.OpenInput(_name, IOContext.DEFAULT)))
         {
             try
             {
-                await using (var stream = new MemoryStream())
+                using (var stream = new MemoryStream())
                 {
-                    await blobStream.CopyToAsync(stream);
+                    blobStream.CopyTo(stream);
                     stream.Position = 0;
-                    await _storage.UploadStreamAsync(_name, stream);
+                    _storage.UploadStream(_name, stream);
                 }
             }
             catch (Exception e)
@@ -87,6 +87,7 @@ public class StorageIndexOutput : IndexOutput, IAsyncDisposable
     }
 
     public override long Checksum => _indexOutput.Checksum;
+
     public ValueTask DisposeAsync()
     {
         throw new NotImplementedException();
