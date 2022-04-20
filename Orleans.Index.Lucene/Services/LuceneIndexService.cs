@@ -72,7 +72,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         var query = parser.Parse(document.LuceneDocument.GetField(Constants.GrainId).GetStringValue());
         _indexWriter.DeleteDocuments(query);
         _indexWriter.AddDocument(document.LuceneDocument);
-        _indexWriter.Commit();
+        // _indexWriter.Commit();
 
         _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
         _indexSearcher = new IndexSearcher(_directoryReader);

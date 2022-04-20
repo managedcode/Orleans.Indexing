@@ -3,7 +3,7 @@ using ManagedCode.Storage.Core;
 
 namespace Orleans.Index.Lucene.Storage;
 
-public class StorageIndexOutput : IndexOutput, IAsyncDisposable
+public class StorageIndexOutput : IndexOutput
 {
     private readonly string _name;
     private readonly IStorage _storage;
@@ -15,12 +15,18 @@ public class StorageIndexOutput : IndexOutput, IAsyncDisposable
     {
         _fileMutex = StorageMutexManager.GrabMutex(name);
         _fileMutex.WaitOne();
-        _name = name;
-        _storage = storage;
-        _directory = directory;
-        _indexOutput = _directory.CachedDirectory.CreateOutput(name, IOContext.DEFAULT);
 
-        _fileMutex.ReleaseMutex();
+        try
+        {
+            _name = name;
+            _storage = storage;
+            _directory = directory;
+            _indexOutput = _directory.CachedDirectory.CreateOutput(name, IOContext.DEFAULT);
+        }
+        finally
+        {
+            _fileMutex.ReleaseMutex();
+        }
     }
 
     public override void WriteByte(byte b)
@@ -61,12 +67,7 @@ public class StorageIndexOutput : IndexOutput, IAsyncDisposable
         {
             try
             {
-                using (var stream = new MemoryStream())
-                {
-                    blobStream.CopyTo(stream);
-                    stream.Position = 0;
-                    _storage.UploadStream(_name, stream);
-                }
+                _storage.UploadStream(_name, blobStream);
             }
             catch (Exception e)
             {
@@ -87,9 +88,4 @@ public class StorageIndexOutput : IndexOutput, IAsyncDisposable
     }
 
     public override long Checksum => _indexOutput.Checksum;
-
-    public ValueTask DisposeAsync()
-    {
-        throw new NotImplementedException();
-    }
 }
