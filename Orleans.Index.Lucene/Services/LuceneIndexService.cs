@@ -7,6 +7,7 @@ using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
 using ManagedCode.Storage.Core;
+using ManagedCode.Storage.Core.Models;
 using Orleans.Concurrency;
 using Orleans.Index.Annotations;
 using Directory = System.IO.Directory;
@@ -22,6 +23,7 @@ public class LuceneIndexService : IIndexService, IDisposable
     private readonly Analyzer _analyzer;
     private IndexSearcher _indexSearcher;
 
+    private FSDirectory _directory;
     private readonly IStorage _storage;
     private readonly string _indexPath;
     private readonly Dictionary<string, IndexWriter> _writers;
@@ -32,6 +34,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         _storage = storage;
         _indexPath = Path.Combine(Path.GetTempPath(), "lucene");
 
+        _directory = FSDirectory.Open(_indexPath);
         _writers = new Dictionary<string, IndexWriter>();
 
         DownloadCache();
@@ -41,7 +44,7 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     public Task InitDirectory(string grainId)
     {
-        var directory = FSDirectory.Open(new DirectoryInfo(_indexPath));
+        var directory = new RAMDirectory(_directory, IOContext.DEFAULT);
 
         var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
         var indexWriter = new IndexWriter(directory, config);
@@ -134,7 +137,7 @@ public class LuceneIndexService : IIndexService, IDisposable
     public void Dispose()
     {
         UploadFiles();
-
+        _directory.Dispose();
         _analyzer?.Dispose();
 
         foreach (var writer in _writers)
@@ -147,9 +150,16 @@ public class LuceneIndexService : IIndexService, IDisposable
     {
         var files = Directory.GetFiles(_indexPath);
 
-        foreach (var file in files)
+
+        foreach (var filePath in files)
         {
-            _storage.Upload(file);
+            BlobMetadata blobMetadata = new()
+            {
+                Name = Path.GetFileName(filePath),
+                Rewrite = true,
+            };
+
+            _storage.Upload(blobMetadata, filePath);
         }
     }
 }
