@@ -23,9 +23,9 @@ public class LuceneIndexService : IIndexService, IDisposable
     private readonly Analyzer _analyzer;
     private IndexSearcher _indexSearcher;
 
-    private FSDirectory _directory;
     private readonly IStorage _storage;
     private readonly string _indexPath;
+    private readonly Dictionary<string, BaseDirectory> _tempDirectories;
     private readonly Dictionary<string, IndexWriter> _writers;
     private MultiReader _reader;
 
@@ -34,8 +34,8 @@ public class LuceneIndexService : IIndexService, IDisposable
         _storage = storage;
         _indexPath = Path.Combine(Path.GetTempPath(), "lucene");
 
-        _directory = FSDirectory.Open(_indexPath);
         _writers = new Dictionary<string, IndexWriter>();
+        _tempDirectories = new Dictionary<string, BaseDirectory>();
 
         DownloadCache();
 
@@ -44,7 +44,16 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     public Task InitDirectory(string grainId)
     {
-        var directory = new RAMDirectory(_directory, IOContext.DEFAULT);
+        var path = Path.Combine(_indexPath, grainId);
+
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+
+        var directory = FSDirectory.Open(path);
+
+        _tempDirectories.Add(grainId, directory);
 
         var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
         var indexWriter = new IndexWriter(directory, config);
@@ -114,15 +123,21 @@ public class LuceneIndexService : IIndexService, IDisposable
     {
         var blobs = _storage.GetBlobList().ToList();
 
-        if (!Directory.Exists(_indexPath))
-        {
-            Directory.CreateDirectory(_indexPath);
-        }
-
-
         foreach (var blob in blobs)
         {
-            var path = Path.Combine(_indexPath, blob.Name);
+            var splits = blob.Name.Split("__");
+
+            var grainId = splits[0];
+            var fileName = splits[1];
+
+            var directoryPath = Path.Combine(_indexPath, grainId);
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            var path = Path.Combine(directoryPath, fileName);
             var file = _storage.Download(blob)!;
 
             using (var stream = File.Create(path))
@@ -136,26 +151,30 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     public void Dispose()
     {
-        UploadFiles();
-        _directory.Dispose();
-        _analyzer?.Dispose();
+        foreach (var tempDirectory in _tempDirectories)
+        {
+            tempDirectory.Value.Dispose();
+            UploadFiles(tempDirectory.Key);
+        }
 
         foreach (var writer in _writers)
         {
             writer.Value.Dispose();
         }
+
+        _analyzer?.Dispose();
     }
 
-    private void UploadFiles()
+    private void UploadFiles(string grainId)
     {
-        var files = Directory.GetFiles(_indexPath);
-
+        var path = Path.Combine(_indexPath, grainId);
+        var files = Directory.GetFiles(path);
 
         foreach (var filePath in files)
         {
             BlobMetadata blobMetadata = new()
             {
-                Name = Path.GetFileName(filePath),
+                Name = $"{grainId}__{Path.GetFileName(filePath)}",
                 Rewrite = true,
             };
 
