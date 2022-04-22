@@ -20,7 +20,7 @@ public class LuceneIndexService : IIndexService, IDisposable
     // Ensures index backward compatibility
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
 
-    private readonly Analyzer _analyzer;
+    private Analyzer _analyzer;
     private IndexSearcher _indexSearcher;
 
     private readonly IStorage _storage;
@@ -37,48 +37,16 @@ public class LuceneIndexService : IIndexService, IDisposable
         _writers = new Dictionary<string, IndexWriter>();
         _tempDirectories = new Dictionary<string, BaseDirectory>();
 
+        InitDirectories();
         DownloadCache();
-
-        _analyzer = new StandardAnalyzer(AppLuceneVersion);
+        InitSearcher();
     }
-
-    public Task InitDirectory(string grainId)
-    {
-        var path = Path.Combine(_indexPath, grainId);
-
-        if (!Directory.Exists(path))
-        {
-            Directory.CreateDirectory(path);
-        }
-
-        var directory = FSDirectory.Open(path);
-
-        _tempDirectories.Add(grainId, directory);
-
-        var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
-        var indexWriter = new IndexWriter(directory, config);
-
-        _writers.Add(grainId, indexWriter);
-
-        var readers = _writers.Select(r => r.Value.GetReader(false)).ToArray();
-        _reader = new MultiReader(readers);
-        _indexSearcher = new IndexSearcher(_reader);
-
-        return Task.CompletedTask;
-    }
-
-    // public Task<TopDocs> QueryByField(string field, string query, int take = 1000) => Task.Run(() =>
-    // {
-    //     var parser = new QueryParser(AppLuceneVersion, field ?? GrainDocument.GrainIdFieldName, this.analyzer);
-    //     var result = this.indexSearcher.Search(parser.Parse(query), null, take);
-    //
-    //
-    //     return result;
-    // });
 
     public Task WriteIndex(Dictionary<string, object> properties)
     {
         var grainId = properties[Constants.GrainId] as string;
+
+        var typeName = properties[Constants.TypeName] as string;
 
         var document = new GrainDocument(grainId);
 
@@ -90,13 +58,9 @@ public class LuceneIndexService : IIndexService, IDisposable
         var parser = new QueryParser(AppLuceneVersion, Constants.GrainId, _analyzer);
         var query = parser.Parse(document.LuceneDocument.GetField(Constants.GrainId).GetStringValue());
 
-        _writers[grainId].DeleteDocuments(query);
-        _writers[grainId].AddDocument(document.LuceneDocument);
-        _writers[grainId].Commit();
-
-        //
-        // _directoryReader = DirectoryReader.OpenIfChanged(_directoryReader) ?? _directoryReader;
-        // _indexSearcher = new IndexSearcher(_directoryReader);
+        _writers[typeName].DeleteDocuments(query);
+        _writers[typeName].AddDocument(document.LuceneDocument);
+        _writers[typeName].Commit();
 
         return Task.CompletedTask;
     }
@@ -118,7 +82,6 @@ public class LuceneIndexService : IIndexService, IDisposable
         return ids;
     });
 
-
     public void DownloadCache()
     {
         var blobs = _storage.GetBlobList().ToList();
@@ -127,10 +90,15 @@ public class LuceneIndexService : IIndexService, IDisposable
         {
             var splits = blob.Name.Split("__");
 
-            var grainId = splits[0];
+            if (splits.Length != 2)
+            {
+                continue;
+            }
+
+            var directoryName = splits[0];
             var fileName = splits[1];
 
-            var directoryPath = Path.Combine(_indexPath, grainId);
+            var directoryPath = Path.Combine(_indexPath, directoryName);
 
             if (!Directory.Exists(directoryPath))
             {
@@ -151,34 +119,75 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     public void Dispose()
     {
+        foreach (var writer in _writers)
+        {
+            writer.Value.Flush(false, false);
+            writer.Value.Dispose();
+        }
+
         foreach (var tempDirectory in _tempDirectories)
         {
             tempDirectory.Value.Dispose();
             UploadFiles(tempDirectory.Key);
         }
 
-        foreach (var writer in _writers)
-        {
-            writer.Value.Dispose();
-        }
-
         _analyzer?.Dispose();
     }
 
-    private void UploadFiles(string grainId)
+    private void UploadFiles(string directoryName)
     {
-        var path = Path.Combine(_indexPath, grainId);
+        var path = Path.Combine(_indexPath, directoryName);
         var files = Directory.GetFiles(path);
 
         foreach (var filePath in files)
         {
             BlobMetadata blobMetadata = new()
             {
-                Name = $"{grainId}__{Path.GetFileName(filePath)}",
+                Name = $"{directoryName}__{Path.GetFileName(filePath)}",
                 Rewrite = true,
             };
 
             _storage.Upload(blobMetadata, filePath);
         }
+    }
+
+    public void InitDirectories()
+    {
+        _analyzer = new StandardAnalyzer(AppLuceneVersion);
+
+        var grainTypes = GetEnumerableOfType<IndexGrain>();
+
+        foreach (var grainType in grainTypes)
+        {
+            var directoryPath = Path.Combine(_indexPath, grainType.Name);
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            var directory = FSDirectory.Open(directoryPath);
+            _tempDirectories.Add(grainType.Name, directory);
+
+            var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
+            var indexWriter = new IndexWriter(directory, config);
+
+            _writers.Add(grainType.Name, indexWriter);
+        }
+    }
+
+    private void InitSearcher()
+    {
+        var readers = _writers.Select(r => r.Value.GetReader(false)).ToArray();
+        _reader = new MultiReader(readers);
+        _indexSearcher = new IndexSearcher(_reader);
+    }
+
+    public static IEnumerable<Type> GetEnumerableOfType<T>() where T : class
+    {
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+        return assemblies.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(T)));
     }
 }

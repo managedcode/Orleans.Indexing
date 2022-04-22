@@ -16,7 +16,6 @@ public abstract class IndexGrain : Grain
     public override async Task OnActivateAsync()
     {
         var id = this.GetPrimaryKeyString();
-        await _indexService.InitDirectory(id);
     }
 
     protected async Task WriteIndexAsync()
@@ -31,7 +30,15 @@ public abstract class IndexGrain : Grain
             id = Guid.NewGuid().ToString();
         }
 
-        Dictionary<string, object> dictionary = new() {{Constants.GrainId, id}};
+        Dictionary<string, object> dictionary = new()
+        {
+            {
+                Constants.GrainId, id
+            },
+            {
+                Constants.TypeName, this.GetType().Name
+            }
+        };
 
         WriteProperties(dictionary, this);
 
