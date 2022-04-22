@@ -139,7 +139,7 @@ public class LuceneIndexTests
 
         for (var i = 0; i < count; i++)
         {
-            var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
+            var grain = _fixture.Cluster.Client.GetGrain<IAnotherTestGrain>(Guid.NewGuid().ToString());
             await grain.UpdateIntValue(3);
         }
 
