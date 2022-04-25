@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -14,6 +15,7 @@ using Orleans.Index.Tests.Cluster;
 using Orleans.Index.Tests.Cluster.Fakes;
 using Orleans.Index.Tests.Grains;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Orleans.Index.Tests.Lucene;
 
@@ -21,10 +23,12 @@ namespace Orleans.Index.Tests.Lucene;
 public class LuceneIndexTests
 {
     private readonly ClusterFixture _fixture;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public LuceneIndexTests(LuceneHubClusterCollection.WinktClusterFixture fixture)
+    public LuceneIndexTests(LuceneHubClusterCollection.WinktClusterFixture fixture, ITestOutputHelper testOutputHelper)
     {
         _fixture = fixture;
+        _testOutputHelper = testOutputHelper;
     }
 
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
@@ -131,6 +135,9 @@ public class LuceneIndexTests
         const int count = 5;
         const int intValue = 10;
 
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+
         for (var i = 0; i < count; i++)
         {
             var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
@@ -143,7 +150,12 @@ public class LuceneIndexTests
             await grain.UpdateIntValue(3);
         }
 
+        _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
+
         var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
+
+
+        _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
         FakeServices.FakeLuceneIndexService.Dispose();
 

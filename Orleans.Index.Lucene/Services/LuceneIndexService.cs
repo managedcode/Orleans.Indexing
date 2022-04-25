@@ -63,6 +63,8 @@ public class LuceneIndexService : IIndexService, IDisposable
         _writers[typeName].AddDocument(document.LuceneDocument);
         _writers[typeName].Commit();
 
+        InitSearcher();
+
         return Task.CompletedTask;
     }
 
@@ -106,7 +108,7 @@ public class LuceneIndexService : IIndexService, IDisposable
 
             using (var stream = File.Create(path))
             {
-                file.FileStream.CopyToAsync(stream);
+                file.FileStream.CopyTo(stream);
                 file.Close();
                 file.Dispose();
             }
@@ -123,22 +125,11 @@ public class LuceneIndexService : IIndexService, IDisposable
             writer.Value.Dispose();
         }
 
-        ClearStorage();
-
         foreach (var tempDirectory in _tempDirectories)
         {
             tempDirectory.Value.Dispose();
             UploadFiles(tempDirectory.Key);
         }
-    }
-
-    private void ClearStorage()
-    {
-        var blobs = _storage
-            .GetBlobList()
-            .ToList();
-
-        _storage.Delete(blobs);
     }
 
     private void UploadFiles(string directoryName)
