@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index", "Orleans.Index\Orleans.Index.csproj", "{B8433DF7-1E87-4C00-850D-191B76BFEEC2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing", "Orleans.Indexing\Orleans.Indexing.csproj", "{B8433DF7-1E87-4C00-850D-191B76BFEEC2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index.Lucene", "Orleans.Index.Lucene\Orleans.Index.Lucene.csproj", "{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Lucene", "Orleans.Indexing.Lucene\Orleans.Indexing.Lucene.csproj", "{EF0DAD6C-F897-4DAD-B52A-4ED824EA5E7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Index.Tests", "Orleans.Index.Tests\Orleans.Index.Tests.csproj", "{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Tests", "Orleans.Indexing.Tests\Orleans.Indexing.Tests.csproj", "{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
