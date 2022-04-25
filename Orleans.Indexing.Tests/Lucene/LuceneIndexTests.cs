@@ -130,7 +130,7 @@ public class LuceneIndexTests
 
 
     [Fact]
-    public async Task GetGrainIds()
+    public async Task GetGrainIdsByQuery()
     {
         const int count = 5;
         const int intValue = 10;
@@ -155,6 +155,38 @@ public class LuceneIndexTests
         var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
 
 
+        _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
+
+        FakeServices.FakeLuceneIndexService.Dispose();
+
+        ids.Count.Should().Be(count);
+    }
+
+    [Fact]
+    public async Task GenericGetGrainIdsByQuery()
+    {
+        const int count = 5;
+        const int intValue = 10;
+
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        for (var i = 0; i < count; i++)
+        {
+            var grain = _fixture.Cluster.Client.GetGrain<ITestGrain>(Guid.NewGuid().ToString());
+            await grain.UpdateIntValue(intValue);
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            var grain = _fixture.Cluster.Client.GetGrain<IAnotherTestGrain>(Guid.NewGuid().ToString());
+            await grain.UpdateIntValue(intValue);
+        }
+
+        _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
+
+        var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery<TestGrain>(nameof(TestGrain.Class.IntValue), $"{intValue}");
+        
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
         FakeServices.FakeLuceneIndexService.Dispose();
