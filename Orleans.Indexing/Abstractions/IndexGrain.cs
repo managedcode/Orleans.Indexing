@@ -1,7 +1,7 @@
-using Orleans.Indexing.Abstractions;
+using Orleans.Indexing.Annotations;
 using Orleans.Placement;
 
-namespace Orleans.Indexing.Annotations;
+namespace Orleans.Indexing.Abstractions;
 
 [PreferLocalPlacement]
 public abstract class IndexGrain : Grain

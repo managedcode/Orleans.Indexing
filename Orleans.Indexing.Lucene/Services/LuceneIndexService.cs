@@ -10,7 +10,7 @@ using Lucene.Net.Util;
 using ManagedCode.Storage.Core;
 using ManagedCode.Storage.Core.Models;
 using Orleans.Concurrency;
-using Orleans.Indexing.Annotations;
+using Orleans.Indexing.Abstractions;
 using Constants = Orleans.Indexing.Constants;
 using Directory = System.IO.Directory;
 
