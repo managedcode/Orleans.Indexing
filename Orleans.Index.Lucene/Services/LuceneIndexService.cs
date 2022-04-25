@@ -37,8 +37,9 @@ public class LuceneIndexService : IIndexService, IDisposable
         _writers = new Dictionary<string, IndexWriter>();
         _tempDirectories = new Dictionary<string, BaseDirectory>();
 
-        InitDirectories();
+        CreateFolders();
         DownloadCache();
+        InitWriters();
         InitSearcher();
     }
 
@@ -100,11 +101,6 @@ public class LuceneIndexService : IIndexService, IDisposable
 
             var directoryPath = Path.Combine(_indexPath, directoryName);
 
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
             var path = Path.Combine(directoryPath, fileName);
             var file = _storage.Download(blob)!;
 
@@ -112,26 +108,37 @@ public class LuceneIndexService : IIndexService, IDisposable
             {
                 file.FileStream.CopyToAsync(stream);
                 file.Close();
-                stream.Flush();
+                file.Dispose();
             }
         }
     }
 
     public void Dispose()
     {
+        _analyzer?.Dispose();
+
         foreach (var writer in _writers)
         {
-            writer.Value.Flush(false, false);
+            writer.Value.Flush(true, true);
             writer.Value.Dispose();
         }
+
+        ClearStorage();
 
         foreach (var tempDirectory in _tempDirectories)
         {
             tempDirectory.Value.Dispose();
             UploadFiles(tempDirectory.Key);
         }
+    }
 
-        _analyzer?.Dispose();
+    private void ClearStorage()
+    {
+        var blobs = _storage
+            .GetBlobList()
+            .ToList();
+
+        _storage.Delete(blobs);
     }
 
     private void UploadFiles(string directoryName)
@@ -144,14 +151,21 @@ public class LuceneIndexService : IIndexService, IDisposable
             BlobMetadata blobMetadata = new()
             {
                 Name = $"{directoryName}__{Path.GetFileName(filePath)}",
+
+                // Dont work. Fix it.
                 Rewrite = true,
             };
 
-            _storage.Upload(blobMetadata, filePath);
+            if (_storage.Exists(blobMetadata))
+            {
+                _storage.Delete(blobMetadata);
+            }
+
+            _storage.UploadFile(blobMetadata, filePath);
         }
     }
 
-    public void InitDirectories()
+    public void CreateFolders()
     {
         _analyzer = new StandardAnalyzer(AppLuceneVersion);
 
@@ -168,11 +182,17 @@ public class LuceneIndexService : IIndexService, IDisposable
 
             var directory = FSDirectory.Open(directoryPath);
             _tempDirectories.Add(grainType.Name, directory);
+        }
+    }
 
+    public void InitWriters()
+    {
+        foreach (var tempDirectory in _tempDirectories)
+        {
             var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
-            var indexWriter = new IndexWriter(directory, config);
+            var indexWriter = new IndexWriter(tempDirectory.Value, config);
 
-            _writers.Add(grainType.Name, indexWriter);
+            _writers.Add(tempDirectory.Key, indexWriter);
         }
     }
 
