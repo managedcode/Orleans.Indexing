@@ -11,7 +11,6 @@ using ManagedCode.Storage.Core;
 using ManagedCode.Storage.Core.Models;
 using Orleans.Concurrency;
 using Orleans.Indexing.Abstractions;
-using Constants = Orleans.Indexing.Constants;
 using Directory = System.IO.Directory;
 
 namespace Orleans.Indexing.Lucene.Services;
@@ -70,18 +69,31 @@ public class LuceneIndexService : IIndexService, IDisposable
         return Task.CompletedTask;
     }
 
-    public Task<IList<string>> GetGrainIdsByQuery(string? field, string query, int take = 1000) => Task.Run(() =>
+    public async Task<IList<string>> GetGrainIdsByQuery(string field, string query, int take = 1000)
+    {
+        return await GetGrainIdsByQueryInternal(_indexSearcher, field, query, take);
+    }
+
+    public async Task<IList<string>> GetGrainIdsByQuery<T>(string field, string query, int take = 1000) where T : IndexGrain
+    {
+        var grainName = typeof(T).Name;
+        IndexSearcher searcher = new(_writers[grainName].GetReader(false));
+
+        return await GetGrainIdsByQueryInternal(searcher, field, query, take);
+    }
+
+    private Task<IList<string>> GetGrainIdsByQueryInternal(IndexSearcher searcher, string? field, string query, int take = 1000) => Task.Run(() =>
     {
         var parser = new QueryParser(AppLuceneVersion, field ?? Constants.GrainId, _analyzer);
-        var result = _indexSearcher.Search(parser.Parse(query), null, take);
+        var result = searcher.Search(parser.Parse(query), null, take);
 
         IList<string> ids = new List<string>();
 
         foreach (var doc in result.ScoreDocs)
         {
-            var document = _indexSearcher.Doc(doc.Doc);
-            var indexableField = document.Fields.FirstOrDefault(f => f.Name == Constants.GrainId)!;
-            ids.Add(indexableField.GetStringValue());
+            var document = searcher.Doc(doc.Doc);
+            var grainIdField = document.Fields.FirstOrDefault(f => f.Name == Constants.GrainId)!;
+            ids.Add(grainIdField.GetStringValue());
         }
 
         return ids;

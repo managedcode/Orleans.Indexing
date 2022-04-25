@@ -46,7 +46,7 @@ public abstract class IndexGrain : Grain
     }
 
 
-    private void WriteProperties(Dictionary<string, object> dictionary, object obj)
+    private static void WriteProperties(Dictionary<string, object> dictionary, object obj)
     {
         var properties = obj.GetType().GetProperties();
 
