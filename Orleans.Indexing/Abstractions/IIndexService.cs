@@ -1,6 +1,6 @@
 using Orleans.Services;
 
-namespace Orleans.Indexing.Annotations;
+namespace Orleans.Indexing.Abstractions;
 
 public interface IIndexService : IGrainService
 {

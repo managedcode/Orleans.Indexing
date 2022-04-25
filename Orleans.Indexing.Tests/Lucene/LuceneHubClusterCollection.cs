@@ -1,6 +1,6 @@
 using ManagedCode.Storage.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Orleans.Indexing.Annotations;
+using Orleans.Indexing.Abstractions;
 using Orleans.Indexing.Tests.Cluster;
 using Orleans.Indexing.Tests.Cluster.Fakes;
 using Xunit;
