@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
@@ -78,7 +79,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         foreach (var doc in result.ScoreDocs)
         {
             var document = _indexSearcher.Doc(doc.Doc);
-            var indexableField = document.Fields.FirstOrDefault(f => f.Name == Constants.GrainId);
+            var indexableField = document.Fields.FirstOrDefault(f => f.Name == Constants.GrainId)!;
             ids.Add(indexableField.GetStringValue());
         }
 
@@ -91,33 +92,19 @@ public class LuceneIndexService : IIndexService, IDisposable
 
         foreach (var blob in blobs)
         {
-            var splits = blob.Name.Split("__");
-
-            if (splits.Length != 2)
-            {
-                continue;
-            }
-
-            var directoryName = splits[0];
-            var fileName = splits[1];
-
+            var directoryName = Path.GetFileNameWithoutExtension(blob.Name);
             var directoryPath = Path.Combine(_indexPath, directoryName);
 
-            var path = Path.Combine(directoryPath, fileName);
             var file = _storage.Download(blob)!;
 
-            using (var stream = File.Create(path))
-            {
-                file.FileStream.CopyTo(stream);
-                file.Close();
-                file.Dispose();
-            }
+            ZipFile.ExtractToDirectory(file.FilePath, directoryPath);
+            File.Delete(file.FilePath);
         }
     }
 
     public void Dispose()
     {
-        _analyzer?.Dispose();
+        _analyzer.Dispose();
 
         foreach (var writer in _writers)
         {
@@ -134,30 +121,37 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     private void UploadFiles(string directoryName)
     {
+        var zipName = $"{directoryName}.zip";
         var path = Path.Combine(_indexPath, directoryName);
-        var files = Directory.GetFiles(path);
+        var zipPath = Path.Combine(_indexPath, zipName);
 
-        foreach (var filePath in files)
+        ZipFile.CreateFromDirectory(path, zipPath);
+
+        BlobMetadata blobMetadata = new()
         {
-            BlobMetadata blobMetadata = new()
-            {
-                Name = $"{directoryName}__{Path.GetFileName(filePath)}",
+            Name = zipName,
 
-                // Dont work. Fix it.
-                Rewrite = true,
-            };
+            // Dont work. Fix it.
+            Rewrite = true,
+        };
 
-            if (_storage.Exists(blobMetadata))
-            {
-                _storage.Delete(blobMetadata);
-            }
-
-            _storage.UploadFile(blobMetadata, filePath);
+        if (_storage.Exists(blobMetadata))
+        {
+            _storage.Delete(blobMetadata);
         }
+
+        _storage.UploadFile(blobMetadata, zipPath);
+
+        File.Delete(zipPath);
     }
 
     public void CreateFolders()
     {
+        if (Directory.Exists(_indexPath))
+        {
+            Directory.Delete(_indexPath, true);
+        }
+
         _analyzer = new StandardAnalyzer(AppLuceneVersion);
 
         var grainTypes = GetEnumerableOfType<IndexGrain>();
@@ -166,10 +160,7 @@ public class LuceneIndexService : IIndexService, IDisposable
         {
             var directoryPath = Path.Combine(_indexPath, grainType.Name);
 
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
+            Directory.CreateDirectory(directoryPath);
 
             var directory = FSDirectory.Open(directoryPath);
             _tempDirectories.Add(grainType.Name, directory);
