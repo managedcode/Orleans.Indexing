@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
@@ -7,41 +6,26 @@ using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
-using ManagedCode.Storage.Core;
-using ManagedCode.Storage.Core.Models;
-using Orleans.Concurrency;
 using Orleans.Indexing.Abstractions;
-using Directory = System.IO.Directory;
 
 namespace Orleans.Indexing.Lucene.Services;
 
-[Reentrant]
-public class LuceneIndexService : IIndexService, IDisposable
+public abstract class LuceneIndexService : IIndexService, IDisposable
 {
     // Ensures index backward compatibility
-    private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
+    protected const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
+    protected MultiReader Reader;
+    protected readonly Analyzer Analyzer;
+    protected IndexSearcher IndexSearcher;
 
-    private Analyzer _analyzer;
-    private MultiReader _reader;
-    private readonly IStorage _storage;
-    private readonly string _indexPath;
-    private IndexSearcher _indexSearcher;
+    protected readonly Dictionary<string, IndexWriter> Writers;
+    protected readonly Dictionary<string, BaseDirectory> TempDirectories;
 
-    private readonly Dictionary<string, IndexWriter> _writers;
-    private readonly Dictionary<string, BaseDirectory> _tempDirectories;
-
-    public LuceneIndexService(IStorage storage)
+    protected LuceneIndexService()
     {
-        _storage = storage;
-        _indexPath = Path.Combine(Path.GetTempPath(), "lucene");
-
-        _writers = new Dictionary<string, IndexWriter>();
-        _tempDirectories = new Dictionary<string, BaseDirectory>();
-
-        CreateFolders();
-        DownloadCache();
-        InitWriters();
-        InitSearcher();
+        Analyzer = new StandardAnalyzer(AppLuceneVersion);
+        Writers = new Dictionary<string, IndexWriter>();
+        TempDirectories = new Dictionary<string, BaseDirectory>();
     }
 
     public Task WriteIndex(Dictionary<string, object> properties)
@@ -55,12 +39,12 @@ public class LuceneIndexService : IIndexService, IDisposable
             document.LuceneDocument.Add(new StringField(property.Key, property.Value as string, Field.Store.YES));
         }
 
-        var parser = new QueryParser(AppLuceneVersion, Constants.GrainId, _analyzer);
+        var parser = new QueryParser(AppLuceneVersion, Constants.GrainId, Analyzer);
         var query = parser.Parse(document.LuceneDocument.GetField(Constants.GrainId).GetStringValue());
 
-        _writers[typeName].DeleteDocuments(query);
-        _writers[typeName].AddDocument(document.LuceneDocument);
-        _writers[typeName].Commit();
+        Writers[typeName].DeleteDocuments(query);
+        Writers[typeName].AddDocument(document.LuceneDocument);
+        Writers[typeName].Commit();
 
         InitSearcher();
 
@@ -69,20 +53,20 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     public async Task<IList<string>> GetGrainIdsByQuery(string field, string query, int take = 1000)
     {
-        return await GetGrainIdsByQueryInternal(_indexSearcher, field, query, take);
+        return await GetGrainIdsByQueryInternal(IndexSearcher, field, query, take);
     }
 
     public async Task<IList<string>> GetGrainIdsByQuery<T>(string field, string query, int take = 1000) where T : IndexGrain
     {
         var grainName = typeof(T).Name;
-        IndexSearcher searcher = new(_writers[grainName].GetReader(false));
+        IndexSearcher searcher = new(Writers[grainName].GetReader(false));
 
         return await GetGrainIdsByQueryInternal(searcher, field, query, take);
     }
 
     private Task<IList<string>> GetGrainIdsByQueryInternal(IndexSearcher searcher, string? field, string query, int take = 1000) => Task.Run(() =>
     {
-        var parser = new QueryParser(AppLuceneVersion, field ?? Constants.GrainId, _analyzer);
+        var parser = new QueryParser(AppLuceneVersion, field ?? Constants.GrainId, Analyzer);
         var result = searcher.Search(parser.Parse(query), null, take);
 
         IList<string> ids = new List<string>();
@@ -97,106 +81,41 @@ public class LuceneIndexService : IIndexService, IDisposable
         return ids;
     });
 
-    public void DownloadCache()
+    public virtual void Dispose()
     {
-        var blobs = _storage.GetBlobList().ToList();
+        Analyzer.Dispose();
 
-        foreach (var blob in blobs)
-        {
-            var directoryName = Path.GetFileNameWithoutExtension(blob.Name);
-            var directoryPath = Path.Combine(_indexPath, directoryName);
-
-            var file = _storage.Download(blob)!;
-
-            ZipFile.ExtractToDirectory(file.FilePath, directoryPath);
-            File.Delete(file.FilePath);
-        }
-    }
-
-    public void Dispose()
-    {
-        _analyzer.Dispose();
-
-        foreach (var writer in _writers)
+        foreach (var writer in Writers)
         {
             writer.Value.Flush(true, true);
             writer.Value.Dispose();
         }
 
-        foreach (var tempDirectory in _tempDirectories)
+        foreach (var tempDirectory in TempDirectories)
         {
             tempDirectory.Value.Dispose();
-            UploadFiles(tempDirectory.Key);
         }
     }
 
-    private void UploadFiles(string directoryName)
+    protected void InitWriters()
     {
-        var zipName = $"{directoryName}.zip";
-        var path = Path.Combine(_indexPath, directoryName);
-        var zipPath = Path.Combine(_indexPath, zipName);
-
-        ZipFile.CreateFromDirectory(path, zipPath);
-
-        BlobMetadata blobMetadata = new()
+        foreach (var tempDirectory in TempDirectories)
         {
-            Name = zipName,
-
-            // Dont work. Fix it.
-            Rewrite = true,
-        };
-
-        if (_storage.Exists(blobMetadata))
-        {
-            _storage.Delete(blobMetadata);
-        }
-
-        _storage.UploadFile(blobMetadata, zipPath);
-
-        File.Delete(zipPath);
-    }
-
-    public void CreateFolders()
-    {
-        if (Directory.Exists(_indexPath))
-        {
-            Directory.Delete(_indexPath, true);
-        }
-
-        _analyzer = new StandardAnalyzer(AppLuceneVersion);
-
-        var grainTypes = GetEnumerableOfType<IndexGrain>();
-
-        foreach (var grainType in grainTypes)
-        {
-            var directoryPath = Path.Combine(_indexPath, grainType.Name);
-
-            Directory.CreateDirectory(directoryPath);
-
-            var directory = FSDirectory.Open(directoryPath);
-            _tempDirectories.Add(grainType.Name, directory);
-        }
-    }
-
-    public void InitWriters()
-    {
-        foreach (var tempDirectory in _tempDirectories)
-        {
-            var config = new IndexWriterConfig(AppLuceneVersion, _analyzer);
+            var config = new IndexWriterConfig(AppLuceneVersion, Analyzer);
             var indexWriter = new IndexWriter(tempDirectory.Value, config);
 
-            _writers.Add(tempDirectory.Key, indexWriter);
+            Writers.Add(tempDirectory.Key, indexWriter);
         }
     }
 
-    private void InitSearcher()
+    protected void InitSearcher()
     {
-        var readers = _writers.Select(r => r.Value.GetReader(false)).ToArray();
-        _reader = new MultiReader(readers);
-        _indexSearcher = new IndexSearcher(_reader);
+        var readers = Writers.Select(r => r.Value.GetReader(false)).ToArray();
+        Reader = new MultiReader(readers);
+        IndexSearcher = new IndexSearcher(Reader);
     }
 
-    public static IEnumerable<Type> GetEnumerableOfType<T>() where T : class
+    protected static IEnumerable<Type> GetEnumerableOfType<T>() where T : class
     {
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 

@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     {
         var storage = new AWSStorage(options);
 
-        return serviceCollection.AddScoped<IIndexService>(_ => new LuceneIndexService(storage));
+        return serviceCollection.AddScoped<IIndexService>(_ => new LuceneWithStorageIndexService(storage));
     }
 
     public static IServiceCollection AddLuceneIndexingWithGcpStore(this IServiceCollection serviceCollection, Action<AWSStorageOptions> action)
@@ -22,6 +22,6 @@ public static class ServiceCollectionExtensions
 
         var storage = new AWSStorage(options);
 
-        return serviceCollection.AddScoped<IIndexService>(_ => new LuceneIndexService(storage));
+        return serviceCollection.AddScoped<IIndexService>(_ => new LuceneWithStorageIndexService(storage));
     }
 }
