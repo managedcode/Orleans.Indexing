@@ -152,12 +152,12 @@ public class LuceneIndexTests
 
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
-        var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
+        var ids = await FakeServices.FakeLuceneWithStorageIndexService.GetGrainIdsByQuery(nameof(TestGrain.Class.IntValue), $"{intValue}");
 
 
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
-        FakeServices.FakeLuceneIndexService.Dispose();
+        FakeServices.FakeLuceneWithStorageIndexService.Dispose();
 
         ids.Count.Should().Be(count);
     }
@@ -185,11 +185,11 @@ public class LuceneIndexTests
 
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
-        var ids = await FakeServices.FakeLuceneIndexService.GetGrainIdsByQuery<TestGrain>(nameof(TestGrain.Class.IntValue), $"{intValue}");
+        var ids = await FakeServices.FakeLuceneWithStorageIndexService.GetGrainIdsByQuery<TestGrain>(nameof(TestGrain.Class.IntValue), $"{intValue}");
         
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
-        FakeServices.FakeLuceneIndexService.Dispose();
+        FakeServices.FakeLuceneWithStorageIndexService.Dispose();
 
         ids.Count.Should().Be(count);
     }

@@ -7,7 +7,7 @@ namespace Orleans.Indexing.Tests.Cluster.Fakes;
 
 public class FakeServices
 {
-    public static LuceneIndexService FakeLuceneIndexService { get; }
+    public static LuceneWithStorageIndexService FakeLuceneWithStorageIndexService { get; }
     public static IStorage FakeStorage { get; }
 
     static FakeServices()
@@ -20,6 +20,6 @@ public class FakeServices
         };
 
         FakeStorage = new AzureStorage(options);
-        FakeLuceneIndexService = new LuceneIndexService(FakeStorage);
+        FakeLuceneWithStorageIndexService = new LuceneWithStorageIndexService(FakeStorage);
     }
 }

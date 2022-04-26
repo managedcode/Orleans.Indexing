@@ -17,7 +17,7 @@ public class LuceneHubClusterCollection : ICollectionFixture<LuceneHubClusterCol
             SiloBuilderConfigurator.ServiceConfigurationAction = collection =>
             {
                 collection.AddLogging();
-                collection.AddSingleton<IIndexService>(FakeServices.FakeLuceneIndexService);
+                collection.AddSingleton<IIndexService>(FakeServices.FakeLuceneWithStorageIndexService);
                 collection.AddSingleton<IStorage>(FakeServices.FakeStorage);
             };
         }
