@@ -22,13 +22,13 @@ public class LuceneIndexService : IIndexService, IDisposable
     private const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
 
     private Analyzer _analyzer;
-    private IndexSearcher _indexSearcher;
-
+    private MultiReader _reader;
     private readonly IStorage _storage;
     private readonly string _indexPath;
-    private readonly Dictionary<string, BaseDirectory> _tempDirectories;
+    private IndexSearcher _indexSearcher;
+
     private readonly Dictionary<string, IndexWriter> _writers;
-    private MultiReader _reader;
+    private readonly Dictionary<string, BaseDirectory> _tempDirectories;
 
     public LuceneIndexService(IStorage storage)
     {
@@ -46,10 +46,8 @@ public class LuceneIndexService : IIndexService, IDisposable
 
     public Task WriteIndex(Dictionary<string, object> properties)
     {
-        var grainId = properties[Constants.GrainId] as string;
-
-        var typeName = properties[Constants.TypeName] as string;
-
+        var grainId = (properties[Constants.GrainId] as string)!;
+        var typeName = (properties[Constants.TypeName] as string)!;
         var document = new GrainDocument(grainId);
 
         foreach (var property in properties)

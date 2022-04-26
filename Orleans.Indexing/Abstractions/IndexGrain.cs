@@ -13,11 +13,6 @@ public abstract class IndexGrain : Grain
         _indexService = indexService;
     }
 
-    public override async Task OnActivateAsync()
-    {
-        var id = this.GetPrimaryKeyString();
-    }
-
     protected async Task WriteIndexAsync()
     {
         string id;
@@ -36,7 +31,7 @@ public abstract class IndexGrain : Grain
                 Constants.GrainId, id
             },
             {
-                Constants.TypeName, this.GetType().Name
+                Constants.TypeName, GetType().Name
             }
         };
 
@@ -46,7 +41,7 @@ public abstract class IndexGrain : Grain
     }
 
 
-    private static void WriteProperties(Dictionary<string, object> dictionary, object obj)
+    private static void WriteProperties(IDictionary<string, object> dictionary, object obj)
     {
         var properties = obj.GetType().GetProperties();
 
@@ -59,7 +54,7 @@ public abstract class IndexGrain : Grain
             var type = propInfo.PropertyType;
             if (!(type.IsPrimitive || type == typeof(decimal) || type == typeof(string)))
             {
-                var instance = propInfo.GetValue(obj);
+                var instance = propInfo.GetValue(obj)!;
                 WriteProperties(dictionary, instance);
             }
             else

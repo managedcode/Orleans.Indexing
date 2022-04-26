@@ -2,7 +2,7 @@ namespace Orleans.Indexing;
 
 public class Constants
 {
-    public const string GrainId = "___grainId";
+    public const string GrainId = "__grainId";
 
-    public const string TypeName = "___typeName";
+    public const string TypeName = "__typeName";
 }
