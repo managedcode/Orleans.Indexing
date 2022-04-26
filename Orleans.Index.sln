@@ -6,6 +6,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Lucene", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Tests", "Orleans.Indexing.Tests\Orleans.Indexing.Tests.csproj", "{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Lucene.Aws", "Orleans.Indexing.Lucene.Aws\Orleans.Indexing.Lucene.Aws.csproj", "{28FC4492-A295-4B3B-8232-2EE7AB1D0C56}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Lucene.Azure", "Orleans.Indexing.Lucene.Azure\Orleans.Indexing.Lucene.Azure.csproj", "{959984AC-869A-44E5-8A8D-AD81D1436B3A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Indexing.Lucene.Gcp", "Orleans.Indexing.Lucene.Gcp\Orleans.Indexing.Lucene.Gcp.csproj", "{11C7D283-ED33-4D7F-A11F-C90A0A7729ED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +30,17 @@ Global
 		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4BB1E68-589F-4AC7-892A-6D6BF28E2C79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28FC4492-A295-4B3B-8232-2EE7AB1D0C56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28FC4492-A295-4B3B-8232-2EE7AB1D0C56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28FC4492-A295-4B3B-8232-2EE7AB1D0C56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28FC4492-A295-4B3B-8232-2EE7AB1D0C56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{959984AC-869A-44E5-8A8D-AD81D1436B3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{959984AC-869A-44E5-8A8D-AD81D1436B3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{959984AC-869A-44E5-8A8D-AD81D1436B3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{959984AC-869A-44E5-8A8D-AD81D1436B3A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11C7D283-ED33-4D7F-A11F-C90A0A7729ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11C7D283-ED33-4D7F-A11F-C90A0A7729ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11C7D283-ED33-4D7F-A11F-C90A0A7729ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11C7D283-ED33-4D7F-A11F-C90A0A7729ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
