@@ -1,9 +1,27 @@
-namespace Orleans.Indexing.Lucene.Extensions;
+using ManagedCode.Storage.Azure;
+using ManagedCode.Storage.Azure.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Orleans.Indexing.Abstractions;
+using Orleans.Indexing.Lucene.Services;
 
-public class ServiceCollectionExtensions
+namespace Orleans.Indexing.Lucene.Azure.Extensions;
+
+public static class ServiceCollectionExtensions
 {
-    // public static IServiceCollection AddFileSystemStorage(this IServiceCollection serviceCollection, LuceneOptions options)
-    // {
-    //     return serviceCollection.AddScoped<IFileSystemStorage>(_ => new FileSystemStorage(options));
-    // }
+    public static IServiceCollection AddLuceneIndexingWithAzureStore(this IServiceCollection serviceCollection, AzureStorageOptions options)
+    {
+        var storage = new AzureStorage(options);
+
+        return serviceCollection.AddScoped<IIndexService>(_ => new LuceneIndexService(storage));
+    }
+
+    public static IServiceCollection AddLuceneIndexingWithAzureStore(this IServiceCollection serviceCollection, Action<AzureStorageOptions> action)
+    {
+        var options = new AzureStorageOptions();
+        action.Invoke(options);
+
+        var storage = new AzureStorage(options);
+
+        return serviceCollection.AddScoped<IIndexService>(_ => new LuceneIndexService(storage));
+    }
 }
