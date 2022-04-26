@@ -1,8 +1,6 @@
 namespace Orleans.Indexing.Lucene.Options;
 
-public class LuceneOptions
+public class FSStoreOptions
 {
-    public StoreType StoreType { get; set; }
-
     public string? IndexPath { get; set; }
 }
