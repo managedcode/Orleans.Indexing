@@ -1,5 +1,6 @@
 using Lucene.Net.Store;
 using Orleans.Indexing.Abstractions;
+using Orleans.Indexing.Lucene.Options;
 using Directory = System.IO.Directory;
 
 namespace Orleans.Indexing.Lucene.Services;
@@ -8,9 +9,9 @@ public class FSLuceneIndexService : LuceneIndexService
 {
     private readonly string _indexPath;
 
-    public FSLuceneIndexService(string? indexPath)
+    public FSLuceneIndexService(FSStoreOptions options)
     {
-        _indexPath = indexPath ?? Path.Combine(Path.GetTempPath(), "lucene");
+        _indexPath = options.IndexPath ?? Path.Combine(Path.GetTempPath(), "lucene");
 
         CreateFolders();
         InitWriters();
