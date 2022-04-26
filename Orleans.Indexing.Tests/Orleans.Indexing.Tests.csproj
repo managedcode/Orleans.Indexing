@@ -13,6 +13,10 @@
 
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="6.6.0" />
+        <PackageReference Include="ManagedCode.Storage.Aws" Version="1.2.0" />
+        <PackageReference Include="ManagedCode.Storage.Azure" Version="1.2.0" />
+        <PackageReference Include="ManagedCode.Storage.Core" Version="1.2.0" />
+        <PackageReference Include="ManagedCode.Storage.Gcp" Version="1.2.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
         <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.2">
           <PrivateAssets>all</PrivateAssets>
