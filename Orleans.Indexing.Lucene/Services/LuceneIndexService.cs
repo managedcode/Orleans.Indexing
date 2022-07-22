@@ -28,6 +28,8 @@ public abstract class LuceneIndexService : IIndexService, IDisposable
         TempDirectories = new Dictionary<string, BaseDirectory>();
     }
 
+    public abstract Task InitializeAsync();
+
     public Task WriteIndex(Dictionary<string, object> properties)
     {
         var grainId = (properties[Constants.GrainId] as string)!;

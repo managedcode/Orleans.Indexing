@@ -9,56 +9,50 @@ using Directory = System.IO.Directory;
 namespace Orleans.Indexing.Lucene.Services;
 
 [Reentrant]
-public class LuceneWithStorageIndexService : LuceneIndexService
+public class LuceneWithStorageIndexService : LuceneIndexService, IAsyncDisposable
 {
     private readonly IStorage _storage;
     private readonly string _indexPath;
+    private bool _isInitialized;
 
     public LuceneWithStorageIndexService(IStorage storage)
     {
         _storage = storage;
         _indexPath = Path.Combine(Path.GetTempPath(), "lucene");
-
-        CreateFolders();
-        DownloadCache();
-        InitWriters();
-        InitSearcher();
     }
 
-    public void DownloadCache()
+    public override async Task InitializeAsync()
     {
-        var blobs = _storage.GetBlobList().ToList();
+        if (_isInitialized) return;
 
-        foreach (var blob in blobs)
+        CreateFolders();
+        await DownloadCacheAsync();
+        InitWriters();
+        InitSearcher();
+
+        _isInitialized = true;
+    }
+
+    public async Task DownloadCacheAsync()
+    {
+        var blobs = _storage.GetBlobMetadataListAsync();
+
+        await foreach (var blob in blobs)
         {
             var directoryName = Path.GetFileNameWithoutExtension(blob.Name);
             var directoryPath = Path.Combine(_indexPath, directoryName);
 
-            var file = _storage.Download(blob)!;
+            var result = await _storage.DownloadAsync(blob.Name);
 
-            ZipFile.ExtractToDirectory(file.FilePath, directoryPath);
-            File.Delete(file.FilePath);
+            if (result.IsSuccess)
+            {
+                ZipFile.ExtractToDirectory(result.Value!.FilePath, directoryPath);
+                File.Delete(result.Value!.FilePath);
+            }
         }
     }
 
-    public override void Dispose()
-    {
-        Analyzer.Dispose();
-
-        foreach (var writer in Writers)
-        {
-            writer.Value.Flush(true, true);
-            writer.Value.Dispose();
-        }
-
-        foreach (var tempDirectory in TempDirectories)
-        {
-            tempDirectory.Value.Dispose();
-            UploadFiles(tempDirectory.Key);
-        }
-    }
-
-    private void UploadFiles(string directoryName)
+    private async Task UploadFilesAsync(string directoryName)
     {
         var zipName = $"{directoryName}.zip";
         var path = Path.Combine(_indexPath, directoryName);
@@ -66,20 +60,19 @@ public class LuceneWithStorageIndexService : LuceneIndexService
 
         ZipFile.CreateFromDirectory(path, zipPath);
 
-        BlobMetadata blobMetadata = new()
-        {
-            Name = zipName,
+        var exists = await _storage.ExistsAsync(zipName);
 
-            // Dont work. Fix it.
-            Rewrite = true,
-        };
-
-        if (_storage.Exists(blobMetadata))
+        if (!exists.Value)
         {
-            _storage.Delete(blobMetadata);
+            await _storage.DeleteAsync(zipName);
         }
 
-        _storage.UploadFile(blobMetadata, zipPath);
+        UploadOptions options = new()
+        {
+            FileName = zipName,
+        };
+
+        await _storage.UploadAsync(zipPath, options);
 
         File.Delete(zipPath);
     }
@@ -101,6 +94,23 @@ public class LuceneWithStorageIndexService : LuceneIndexService
 
             var directory = FSDirectory.Open(directoryPath);
             TempDirectories.Add(grainType.Name, directory);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Analyzer.Dispose();
+
+        foreach (var writer in Writers)
+        {
+            writer.Value.Flush(true, true);
+            writer.Value.Dispose();
+        }
+
+        foreach (var tempDirectory in TempDirectories)
+        {
+            tempDirectory.Value.Dispose();
+            await UploadFilesAsync(tempDirectory.Key);
         }
     }
 }

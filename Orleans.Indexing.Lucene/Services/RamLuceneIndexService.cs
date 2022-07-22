@@ -14,6 +14,11 @@ public class RamLuceneIndexService : LuceneIndexService
         InitSearcher();
     }
 
+    public override Task InitializeAsync()
+    {
+        return Task.CompletedTask;
+    }
+
     public void CreateDirectories()
     {
         var grainTypes = GetEnumerableOfType<IndexGrain>();

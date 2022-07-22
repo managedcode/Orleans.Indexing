@@ -9,4 +9,5 @@ public interface IIndexService : IGrainService
     Task<IList<string>> GetGrainIdsByQuery(string field, string query, int take = 1000);
 
     Task<IList<string>> GetGrainIdsByQuery<T>(string field, string query, int take = 1000) where T : IndexGrain;
+    Task InitializeAsync();
 }
