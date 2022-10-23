@@ -18,6 +18,12 @@ public class FSLuceneIndexService : LuceneIndexService
         InitSearcher();
     }
 
+
+    public override Task InitializeAsync()
+    {
+        return Task.CompletedTask;
+    }
+
     public void CreateFolders()
     {
         if (Directory.Exists(_indexPath))

@@ -13,6 +13,11 @@ public abstract class IndexGrain : Grain
         _indexService = indexService;
     }
 
+    public override async Task OnActivateAsync()
+    {
+        await _indexService.InitializeAsync();
+    }
+
     protected async Task WriteIndexAsync()
     {
         string id;

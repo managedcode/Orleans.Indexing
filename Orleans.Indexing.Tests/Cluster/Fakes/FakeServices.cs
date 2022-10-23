@@ -15,7 +15,7 @@ public class FakeServices
         AzureStorageOptions options = new()
         {
             ConnectionString =
-                "DefaultEndpointsProtocol=https;AccountName=winktblobtest;AccountKey=V7wWKnqRsSPqog4NhVchzguMBc6aDw6LHjD0Si/z1mAUYGaWNpUccoxitFHeVsQPmmIOsQrUbSm7+AStw+amcg==;EndpointSuffix=core.windows.net",
+                "",
             Container = "lucene",
         };
 

@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Lucene.Net.Analysis;
@@ -186,7 +185,7 @@ public class LuceneIndexTests
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
         var ids = await FakeServices.FakeLuceneWithStorageIndexService.GetGrainIdsByQuery<TestGrain>(nameof(TestGrain.Class.IntValue), $"{intValue}");
-        
+
         _testOutputHelper.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
 
         FakeServices.FakeLuceneWithStorageIndexService.Dispose();
@@ -197,10 +196,12 @@ public class LuceneIndexTests
     [Fact]
     public async Task ClearStorage()
     {
-        var blobs = await FakeServices.FakeStorage
-            .GetBlobListAsync()
-            .ToListAsync();
+        var blobs = FakeServices.FakeStorage
+            .GetBlobMetadataListAsync();
 
-        await FakeServices.FakeStorage.DeleteAsync(blobs);
+        await foreach (var blob in blobs)
+        {
+            await FakeServices.FakeStorage.DeleteAsync(blob.Name);
+        }
     }
 }
